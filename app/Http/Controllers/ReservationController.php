@@ -1,0 +1,109 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Lot;
+use App\Models\Reservation;
+use App\Services\AmortizationService;
+use Illuminate\Http\Request;
+
+class ReservationController extends Controller
+{
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'lot_id' => 'required|exists:lots,id',
+            'client_id' => 'required|exists:clients,id',
+            'down_payment' => 'required|numeric|min:0',
+            'payment_deadline' => 'required|date|after:today',
+            'notes' => 'nullable|string',
+            // Payment plan fields
+            'total_installments' => 'required|integer|min:1|max:120',
+            'start_date' => 'required|date|after_or_equal:today',
+        ]);
+
+        $lot = Lot::with('block.project')->findOrFail($validated['lot_id']);
+
+        // Verify tenant ownership
+        if ($lot->block->project->tenant_id !== $request->user()->tenant_id) {
+            abort(403);
+        }
+
+        // Verify lot is available
+        if ($lot->status !== 'available') {
+            return redirect()->back()->withErrors(['lot_id' => 'Este lote no está disponible.']);
+        }
+
+        // Create reservation
+        $reservation = Reservation::create([
+            'lot_id' => $validated['lot_id'],
+            'client_id' => $validated['client_id'],
+            'user_id' => $request->user()->id,
+            'down_payment' => $validated['down_payment'],
+            'payment_deadline' => $validated['payment_deadline'],
+            'notes' => $validated['notes'] ?? null,
+            'status' => 'active',
+        ]);
+
+        // Update lot status
+        $lot->update(['status' => 'reserved']);
+
+        // Generate payment plan
+        $amortization = new AmortizationService();
+        $amortization->generateSchedule(
+            totalPrice: (float) $lot->price,
+            downPayment: (float) $validated['down_payment'],
+            totalInstallments: $validated['total_installments'],
+            startDate: $validated['start_date'],
+            reservationId: $reservation->id,
+        );
+
+        return redirect()->route('lots.show', $lot)->with('success', 'Reserva creada exitosamente.');
+    }
+
+    public function cancel(Reservation $reservation)
+    {
+        $tenantId = request()->user()->tenant_id;
+        if ($reservation->lot->block->project->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        if (!in_array($reservation->status, ['active'])) {
+            return redirect()->back()->withErrors(['status' => 'Solo se pueden cancelar reservas activas.']);
+        }
+
+        $reservation->update([
+            'status' => 'cancelled',
+        ]);
+
+        $reservation->lot->update(['status' => 'available']);
+
+        // Cancel payment plan if exists
+        if ($reservation->paymentPlan) {
+            $reservation->paymentPlan->update(['status' => 'cancelled']);
+        }
+
+        return redirect()->back()->with('success', 'Reserva cancelada. El lote está disponible nuevamente.');
+    }
+
+    public function confirm(Reservation $reservation)
+    {
+        $tenantId = request()->user()->tenant_id;
+        if ($reservation->lot->block->project->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        if ($reservation->status !== 'active') {
+            return redirect()->back()->withErrors(['status' => 'Solo se pueden confirmar reservas activas.']);
+        }
+
+        $reservation->update([
+            'status' => 'confirmed',
+            'confirmed_at' => now(),
+        ]);
+
+        $reservation->lot->update(['status' => 'sold']);
+
+        return redirect()->back()->with('success', 'Reserva confirmada. El lote ha sido vendido.');
+    }
+}

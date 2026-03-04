@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --color-bg-primary: #121212;
+        --color-bg-secondary: #0a0a0a;
+        --color-bg-tertiary: #1e1e1e;
+        --color-bg-card: #18181a;
+        --color-bg-hover: #262626;
+        --color-border: #2a2a2a;
+        --color-border-light: #3f3f46;
+        --color-text-primary: #ededed;
+        --color-text-secondary: #a1a1aa;
+        --color-text-muted: #71717a;
+        --color-accent: #ffffff;
+        --color-accent-hover: #f4f4f5;
+        --color-success: #22c55e;
+        --color-warning: #f59e0b;
+        --color-danger: #ef4444;
+        --color-info: #3b82f6;
+    }
+
+    body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: var(--color-bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-border-light);
+    }
+}
+
+@layer components {
+    .glass-card {
+        @apply bg-[#18181a] border border-[#2a2a2a] rounded-2xl;
+    }
+
+    .glass-card-hover {
+        @apply glass-card transition-all duration-300 hover:border-[#3f3f46] hover:bg-[#1c1c1e];
+    }
+
+    .sidebar-link {
+        @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200;
+    }
+
+    .sidebar-link-active {
+        @apply bg-[#262626] text-white border border-[#3f3f46];
+    }
+
+    .sidebar-link-inactive {
+        @apply text-[#a1a1aa] hover:text-white hover:bg-[#1e1e1e];
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold
+               bg-white text-black
+               hover:bg-gray-200
+               focus:outline-none focus:ring-2 focus:ring-white/50
+               transition-all duration-200;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold
+               bg-[#1e1e1e] text-[#ededed] border border-[#2a2a2a]
+               hover:text-white hover:border-[#3f3f46] hover:bg-[#262626]
+               focus:outline-none focus:ring-2 focus:ring-[#2a2a2a]
+               transition-all duration-200;
+    }
+
+    .btn-danger {
+        @apply inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold
+               bg-red-500/10 text-red-400 border border-red-500/20
+               hover:bg-red-500/20 hover:text-red-300
+               focus:outline-none focus:ring-2 focus:ring-red-500/30
+               transition-all duration-200;
+    }
+
+    .btn-success {
+        @apply inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold
+               bg-emerald-500/10 text-emerald-400 border border-emerald-500/20
+               hover:bg-emerald-500/20 hover:text-emerald-300
+               focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+               transition-all duration-200;
+    }
+
+    .input-dark {
+        @apply w-full px-4 py-2.5 rounded-xl text-sm
+               bg-[#121212] text-white border border-[#2a2a2a]
+               placeholder-[#71717a]
+               focus:outline-none focus:ring-2 focus:ring-[#52525b] focus:border-[#52525b]
+               transition-all duration-200;
+    }
+
+    .label-dark {
+        @apply block text-sm font-medium text-[#a1a1aa] mb-1.5;
+    }
+
+    .metric-card {
+        @apply bg-[#18181a] border border-[#2a2a2a] rounded-2xl p-6 relative overflow-hidden;
+    }
+
+    .table-dark {
+        @apply w-full text-left text-sm;
+    }
+
+    .table-dark thead {
+        @apply text-xs uppercase text-[#71717a] border-b border-[#2a2a2a];
+    }
+
+    .table-dark thead th {
+        @apply px-4 py-3 font-semibold tracking-wider;
+    }
+
+    .table-dark tbody tr {
+        @apply border-b border-[#1e1e1e] hover:bg-[#262626]/50 transition-colors;
+    }
+
+    .table-dark tbody td {
+        @apply px-4 py-3.5 text-[#a1a1aa];
+    }
+}
