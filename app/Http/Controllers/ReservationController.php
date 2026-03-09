@@ -16,6 +16,7 @@ class ReservationController extends Controller
             'client_id' => 'required|exists:clients,id',
             'down_payment' => 'required|numeric|min:0',
             'payment_deadline' => 'required|date|after:today',
+            'payment_proof' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'notes' => 'nullable|string',
             // Payment plan fields
             'total_installments' => 'required|integer|min:1|max:120',
@@ -34,6 +35,11 @@ class ReservationController extends Controller
             return redirect()->back()->withErrors(['lot_id' => 'Este lote no está disponible.']);
         }
 
+        $proofPath = null;
+        if ($request->hasFile('payment_proof')) {
+            $proofPath = $request->file('payment_proof')->store('payment_proofs', 'public');
+        }
+
         // Create reservation
         $reservation = Reservation::create([
             'lot_id' => $validated['lot_id'],
@@ -41,12 +47,13 @@ class ReservationController extends Controller
             'user_id' => $request->user()->id,
             'down_payment' => $validated['down_payment'],
             'payment_deadline' => $validated['payment_deadline'],
+            'payment_proof' => $proofPath,
             'notes' => $validated['notes'] ?? null,
-            'status' => 'active',
+            'status' => 'pending_approval',
         ]);
 
         // Update lot status
-        $lot->update(['status' => 'reserved']);
+        $lot->update(['status' => 'pending_approval']);
 
         // Generate payment plan
         $amortization = new AmortizationService();
@@ -58,7 +65,7 @@ class ReservationController extends Controller
             reservationId: $reservation->id,
         );
 
-        return redirect()->route('lots.show', $lot)->with('success', 'Reserva creada exitosamente.');
+        return redirect()->route('lots.show', $lot)->with('success', 'Reserva creada y pendiente de aprobación.');
     }
 
     public function cancel(Reservation $reservation)
@@ -105,5 +112,29 @@ class ReservationController extends Controller
         $reservation->lot->update(['status' => 'sold']);
 
         return redirect()->back()->with('success', 'Reserva confirmada. El lote ha sido vendido.');
+    }
+
+    public function approve(Reservation $reservation)
+    {
+        $tenantId = request()->user()->tenant_id;
+        if ($reservation->lot->block->project->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        if (!request()->user()->isAdmin()) {
+            abort(403, 'No autorizado.');
+        }
+
+        if ($reservation->status !== 'pending_approval') {
+            return redirect()->back()->withErrors(['status' => 'Solo se pueden aprobar reservas pendientes.']);
+        }
+
+        $reservation->update([
+            'status' => 'active',
+        ]);
+
+        $reservation->lot->update(['status' => 'reserved']);
+
+        return redirect()->back()->with('success', 'Reserva aprobada exitosamente.');
     }
 }

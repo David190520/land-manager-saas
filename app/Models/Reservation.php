@@ -18,6 +18,7 @@ class Reservation extends Model
         'notes',
         'confirmed_at',
         'expired_at',
+        'payment_proof',
     ];
 
     protected $casts = [
@@ -57,6 +58,7 @@ class Reservation extends Model
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
+            'pending_approval' => 'Pendiente Aprobación',
             'active' => 'Activa',
             'confirmed' => 'Confirmada',
             'expired' => 'Expirada',

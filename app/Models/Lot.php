@@ -51,6 +51,7 @@ class Lot extends Model
     {
         return match ($this->status) {
             'available' => 'green',
+            'pending_approval' => 'yellow',
             'reserved' => 'orange',
             'sold' => 'red',
             default => 'gray',
@@ -61,6 +62,7 @@ class Lot extends Model
     {
         return match ($this->status) {
             'available' => 'Disponible',
+            'pending_approval' => 'Pendiente Aprob.',
             'reserved' => 'Reservado',
             'sold' => 'Vendido',
             default => 'Desconocido',

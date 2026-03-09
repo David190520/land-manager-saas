@@ -41,11 +41,15 @@ const formatCurrency = (value) => {
     }).format(value);
 };
 
-const getStatusClasses = (status) => {
+const getStatusClasses = (status, isInitial = false) => {
+    if (status === 'overdue') {
+        return isInitial 
+            ? 'bg-amber-500/20 text-amber-500 border-amber-500/30'
+            : 'bg-rose-500/20 text-rose-500 border-rose-500/30';
+    }
     return {
         'pending': 'bg-[#18181a] text-[#ededed] border-[#3f3f46]',
         'paid': 'bg-white text-black border-white',
-        'overdue': 'bg-[#0a0a0a] text-[#71717a] border-[#2a2a2a]',
     }[status] || 'bg-[#18181a] text-[#a1a1aa] border-[#2a2a2a]';
 };
 </script>
@@ -171,7 +175,7 @@ const getStatusClasses = (status) => {
                             <td class="text-[#71717a]">{{ formatCurrency(row.balance) }}</td>
                             <td class="text-[#a1a1aa] italic font-medium opacity-80 mt-[2px] inline-block">{{ row.paid_date || 'En descubierto' }}</td>
                             <td>
-                                <span :class="['inline-block border px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest', getStatusClasses(row.status)]">
+                                <span :class="['inline-block border px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest', getStatusClasses(row.status, row.installment === 1)]">
                                     {{ row.status_label }}
                                 </span>
                             </td>

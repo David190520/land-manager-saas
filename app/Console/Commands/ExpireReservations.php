@@ -24,18 +24,19 @@ class ExpireReservations extends Command
         $count = 0;
 
         foreach ($expired as $reservation) {
+            /** @var \App\Models\Reservation $reservation */
             $reservation->update([
                 'status' => 'expired',
                 'expired_at' => now(),
             ]);
 
-            // Revert lot status to available
-            $reservation->lot()->update(['status' => 'available']);
+            // Now, if the first payment is not made within 20-30 days, the lot stays in its current state
+            // until an Administrator manually releases it to "Available".
 
             $count++;
         }
 
-        $this->info("Expired {$count} reservation(s) and reverted lot(s) to available.");
+        $this->info("Expired {$count} reservation(s). Lots remain in their current state.");
 
         return Command::SUCCESS;
     }

@@ -1,12 +1,17 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
 const props = defineProps({
     lot: Object,
     reservation: Object,
     clients: Array,
+});
+
+const page = usePage();
+const isAdmin = computed(() => {
+    return page.props.auth.user.role === 'admin' || page.props.auth.user.role === 'accountant';
 });
 
 const showReservationForm = ref(false);
@@ -19,6 +24,7 @@ const form = useForm({
     client_id: '',
     down_payment: '',
     payment_deadline: '',
+    payment_proof: null,
     notes: '',
     total_installments: 12,
     start_date: new Date().toISOString().split('T')[0],
@@ -26,11 +32,16 @@ const form = useForm({
 
 const submitReservation = () => {
     form.post(route('reservations.store'), {
+        preserveScroll: true,
         onSuccess: () => {
             showReservationForm.value = false;
             form.reset();
         },
     });
+};
+
+const handleProofUpload = (event) => {
+    form.payment_proof = event.target.files[0];
 };
 
 const cancelReservation = () => {
@@ -42,6 +53,12 @@ const cancelReservation = () => {
 const confirmReservation = () => {
     if (confirm('¿Confirmar la venta de este lote?')) {
         router.post(route('reservations.confirm', props.reservation.id));
+    }
+};
+
+const approveReservation = () => {
+    if (confirm('¿Aprobar esta reserva?')) {
+        router.post(route('reservations.approve', props.reservation.id));
     }
 };
 
@@ -123,7 +140,7 @@ const estimatedInstallment = computed(() => {
                 <div v-if="reservation" class="bg-[#18181a] border border-[#2a2a2a] p-8 rounded-2xl animate-slide-up" style="animation-delay: 100ms">
                     <h3 class="text-sm font-semibold text-white mb-6 uppercase tracking-wider pb-3 border-b border-[#2a2a2a] flex items-center gap-3">
                         <v-icon name="md-peopleoutline" scale="1.2" fill="#ededed" />
-                        Reserva Activa
+                        Detalles de Reserva
                     </h3>
 
                     <!-- Client Info -->
@@ -136,6 +153,12 @@ const estimatedInstallment = computed(() => {
                                 <p class="text-sm text-white font-semibold">{{ reservation.client.full_name }}</p>
                                 <p class="text-[10px] text-[#71717a] uppercase mt-1 tracking-wider">{{ reservation.client.document_number }} • {{ reservation.client.phone }}</p>
                             </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-[#2a2a2a]" v-if="reservation.payment_proof">
+                            <a :href="`/storage/${reservation.payment_proof}`" target="_blank" class="text-xs text-blue-400 hover:underline flex items-center gap-1">
+                                <v-icon name="md-attachfile" scale="0.8" />
+                                Ver Comprobante de Pago
+                            </a>
                         </div>
                     </div>
 
@@ -173,7 +196,7 @@ const estimatedInstallment = computed(() => {
                                 <p class="text-sm font-bold text-white">{{ formatCurrency(reservation.payment_plan.financed_amount) }}</p>
                             </div>
                             <div>
-                                <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-1">Saladada</p>
+                                <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-1">Saldada</p>
                                 <p class="text-sm font-bold text-white">{{ formatCurrency(reservation.payment_plan.total_paid) }}</p>
                             </div>
                             <div>
@@ -190,10 +213,13 @@ const estimatedInstallment = computed(() => {
 
                     <!-- Action buttons -->
                     <div class="flex flex-col sm:flex-row gap-4">
+                        <button v-if="reservation.status === 'pending_approval' && isAdmin" @click="approveReservation" class="btn-primary flex-1 bg-green-600 hover:bg-green-500 text-white">
+                            Aprobar Reserva
+                        </button>
                         <button v-if="reservation.status === 'active'" @click="confirmReservation" class="btn-primary flex-1">
                             Confirmar Propiedad
                         </button>
-                        <button v-if="reservation.status === 'active'" @click="cancelReservation" class="btn-secondary flex-1">
+                        <button v-if="['active', 'pending_approval'].includes(reservation.status)" @click="cancelReservation" class="btn-secondary flex-1">
                             Liberar Lote
                         </button>
                     </div>
@@ -208,7 +234,7 @@ const estimatedInstallment = computed(() => {
                         </button>
                     </div>
 
-                    <form @submit.prevent="submitReservation" class="space-y-6">
+                    <form @submit.prevent="submitReservation" class="space-y-6" enctype="multipart/form-data">
                         <!-- Client Selection -->
                         <div>
                             <label class="label-dark">Seleccione Cliente Titular</label>
@@ -235,6 +261,12 @@ const estimatedInstallment = computed(() => {
                                 <input v-model="form.payment_deadline" type="date" class="input-dark bg-[#121212]" />
                                 <p v-if="form.errors.payment_deadline" class="text-red-400 text-xs mt-1">{{ form.errors.payment_deadline }}</p>
                             </div>
+                        </div>
+
+                        <div>
+                            <label class="label-dark">Comprobante de Pago (PDF/Imagen)</label>
+                            <input type="file" @change="handleProofUpload" accept=".pdf,image/*" class="input-dark bg-[#121212] py-2" />
+                            <p v-if="form.errors.payment_proof" class="text-red-400 text-xs mt-1">{{ form.errors.payment_proof }}</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-6">
