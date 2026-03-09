@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
+import CreateClientModal from './Partials/CreateClientModal.vue';
 
 const props = defineProps({
     clients: Object,
@@ -9,6 +10,7 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search || '');
+const showingCreateModal = ref(false);
 let searchTimeout = null;
 
 watch(search, (value) => {
@@ -20,6 +22,10 @@ watch(search, (value) => {
         });
     }, 300);
 });
+
+const openCreateModal = () => {
+    showingCreateModal.value = true;
+};
 </script>
 
 <template>
@@ -32,11 +38,13 @@ watch(search, (value) => {
                 <h1 class="text-2xl font-semibold text-white tracking-tight">Directorio de Clientes</h1>
                 <p class="text-xs text-[#71717a] mt-1 font-medium tracking-wide">Padrón oficial</p>
             </div>
-            <Link :href="route('clients.create')" class="btn-primary">
+            <button @click="openCreateModal" class="btn-primary">
                 <v-icon name="md-add" fill="black" class="mr-2" />
                 Registrar Ficha
-            </Link>
+            </button>
         </div>
+
+        <CreateClientModal :show="showingCreateModal" @close="showingCreateModal = false" />
 
         <!-- Search -->
         <div class="mb-6 animate-slide-up">
