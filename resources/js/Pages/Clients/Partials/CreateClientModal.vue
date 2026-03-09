@@ -40,7 +40,7 @@ const closeModal = () => {
 
 <template>
     <Modal :show="show" maxWidth="3xl" @close="closeModal">
-        <div class="bg-[#18181a] border border-[#2a2a2a] rounded-2xl p-8 relative overflow-hidden">
+        <div class="p-8 relative overflow-hidden">
             <!-- Decorative corner -->
             <div class="absolute -top-12 -right-12 w-24 h-24 bg-white/5 blur-2xl rounded-full"></div>
 
