@@ -16,6 +16,10 @@ class ClientController extends Controller
 
         $query = Client::where('tenant_id', $tenantId);
 
+        if ($request->user()->role === 'sales_agent') {
+            $query->where('user_id', $request->user()->id);
+        }
+
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
@@ -74,6 +78,7 @@ class ClientController extends Controller
         ]);
 
         $validated['tenant_id'] = $request->user()->tenant_id;
+        $validated['user_id'] = $request->user()->id;
 
         $client = Client::create($validated);
 
@@ -218,6 +223,10 @@ class ClientController extends Controller
     {
         if ($client->tenant_id !== request()->user()->tenant_id) {
             abort(403);
+        }
+
+        if (request()->user()->role === 'sales_agent' && $client->user_id !== request()->user()->id) {
+            abort(403, 'No tienes permiso para ver o modificar este cliente.');
         }
     }
 }

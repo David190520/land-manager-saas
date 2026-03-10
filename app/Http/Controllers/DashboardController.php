@@ -80,7 +80,11 @@ class DashboardController extends Controller
                 ];
             });
 
-        $totalClients = Client::where('tenant_id', $tenantId)->count();
+        $clientsQuery = Client::where('tenant_id', $tenantId);
+        if ($request->user()->role === 'sales_agent') {
+            $clientsQuery->where('user_id', $request->user()->id);
+        }
+        $totalClients = $clientsQuery->count();
 
         return Inertia::render('Dashboard', [
             'stats' => [

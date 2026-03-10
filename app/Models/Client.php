@@ -10,6 +10,7 @@ class Client extends Model
 {
     protected $fillable = [
         'tenant_id',
+        'user_id',
         'first_name',
         'last_name',
         'document_type',
@@ -27,6 +28,11 @@ class Client extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function reservations(): HasMany

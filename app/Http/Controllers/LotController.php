@@ -18,8 +18,13 @@ class LotController extends Controller
             abort(403);
         }
 
-        $clients = Client::where('tenant_id', $tenantId)
-            ->orderBy('first_name')
+        $clientsQuery = Client::where('tenant_id', $tenantId);
+        
+        if (request()->user()->role === 'sales_agent') {
+            $clientsQuery->where('user_id', request()->user()->id);
+        }
+
+        $clients = $clientsQuery->orderBy('first_name')
             ->get()
             ->map(fn($c) => [
                 'id' => $c->id,
