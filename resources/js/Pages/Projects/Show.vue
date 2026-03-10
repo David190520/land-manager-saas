@@ -28,8 +28,8 @@ const formatCurrency = (value) => {
 const getStatusClasses = (status) => {
     return {
         'available': 'bg-[#18181a] border-[#2a2a2a] hover:border-white/20 text-white',
-        'reserved': 'bg-[#121212] border-[#3f3f46] hover:border-white/40 text-[#a1a1aa]',
-        'sold': 'bg-[#0a0a0a] border-[#1e1e1e] hover:border-[#2a2a2a] text-[#71717a] opacity-50',
+        'reserved': 'bg-blue-500/10 border-blue-500/20 hover:border-blue-500/40 text-blue-500/90',
+        'sold': 'bg-red-500/10 border-red-500/20 hover:border-red-500/40 text-red-500/90',
         'pending_approval': 'bg-amber-500/10 border-amber-500/20 hover:border-amber-500/40 text-amber-500/90',
     }[status] || 'bg-[#18181a] border-[#2a2a2a] hover:border-[#3f3f46] text-white';
 };
@@ -37,8 +37,8 @@ const getStatusClasses = (status) => {
 const getStatusLabelColor = (status) => {
     return {
         'available': 'text-white font-semibold',
-        'reserved': 'text-[#a1a1aa]',
-        'sold': 'text-[#71717a]',
+        'reserved': 'text-blue-500 font-bold',
+        'sold': 'text-red-500 font-bold',
         'pending_approval': 'text-amber-500 font-bold',
     }[status] || 'text-[#71717a]';
 };
@@ -86,11 +86,11 @@ const getFilteredLots = (lots) => {
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Pendientes</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-xl font-semibold text-[#a1a1aa]">{{ project.reserved_lots }}</p>
+                        <p class="text-xl font-semibold text-blue-500">{{ project.reserved_lots }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Reservados</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-xl font-semibold text-[#71717a]">{{ project.sold_lots }}</p>
+                        <p class="text-xl font-semibold text-red-500">{{ project.sold_lots }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Vendidos</p>
                     </div>
                 </div>
@@ -145,8 +145,8 @@ const getFilteredLots = (lots) => {
                         <span>•</span>
                         <span class="text-white">{{ block.available_lots }} DISP</span>
                         <span class="text-amber-500">{{ block.pending_approval_lots }} PEND.</span>
-                        <span class="text-[#a1a1aa]">{{ block.reserved_lots }} RES.</span>
-                        <span class="text-[#71717a]">{{ block.sold_lots }} VND.</span>
+                        <span class="text-blue-500">{{ block.reserved_lots }} RES.</span>
+                        <span class="text-red-500">{{ block.sold_lots }} VND.</span>
                     </div>
                 </div>
 
@@ -164,7 +164,7 @@ const getFilteredLots = (lots) => {
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-[11px] font-bold">L-{{ lot.lot_number }}</span>
                             <div class="flex gap-0.5">
-                                <div v-if="lot.status === 'sold'" class="w-1.5 h-1.5 rounded-full bg-[#3f3f46]"></div>
+                                <div v-if="lot.status === 'sold'" class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                                 <div v-if="lot.status === 'reserved'" class="w-1.5 h-1.5 rounded-full bg-[#71717a]"></div>
                             </div>
                         </div>

@@ -106,6 +106,27 @@ const estimatedInstallment = computed(() => {
     const financed = props.lot.price - form.down_payment;
     return financed > 0 ? Math.round(financed / form.total_installments) : 0;
 });
+
+const getStatusBadgeClasses = (status) => {
+    return {
+        'available': 'bg-[#18181a] border-[#2a2a2a] text-white',
+        'reserved': 'bg-blue-500/10 border-blue-500/20 text-blue-500',
+        'sold': 'bg-red-500/10 border-red-500/20 text-red-500',
+        'pending_approval': 'bg-amber-500/10 border-amber-500/20 text-amber-500',
+    }[status] || 'bg-[#1e1e1e] border-[#3f3f46] text-white';
+};
+
+const getStatusTextClasses = (status) => {
+    return {
+        'available': 'text-white',
+        'reserved': 'text-blue-500',
+        'sold': 'text-red-500',
+        'pending_approval': 'text-amber-500',
+        'active': 'text-green-500',
+        'confirmed': 'text-blue-500',
+        'cancelled': 'text-red-500',
+    }[status] || 'text-white';
+};
 </script>
 
 <template>
@@ -137,7 +158,7 @@ const estimatedInstallment = computed(() => {
                 <div class="bg-[#18181a] border border-[#2a2a2a] p-8 rounded-2xl animate-slide-up">
                     <div class="flex items-center justify-between mb-8 pb-4 border-b border-[#2a2a2a]">
                         <h2 class="text-2xl font-semibold text-white tracking-tight">Lote {{ lot.lot_number }}</h2>
-                        <span class="px-3 py-1 bg-[#1e1e1e] border border-[#3f3f46] rounded text-[10px] text-white font-semibold uppercase tracking-wider">
+                        <span :class="['px-3 py-1 rounded text-[10px] font-semibold uppercase tracking-wider border', getStatusBadgeClasses(lot.status)]">
                             {{ lot.status_label }}
                         </span>
                     </div>
@@ -215,7 +236,7 @@ const estimatedInstallment = computed(() => {
                         </div>
                         <div class="p-4 border-r border-b lg:border-b-0 border-[#2a2a2a]">
                             <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Estado</p>
-                            <p class="text-[10px] font-bold text-white uppercase tracking-wider">{{ reservation.status_label }}</p>
+                            <p :class="['text-[10px] font-bold uppercase tracking-wider', getStatusTextClasses(reservation.status)]">{{ reservation.status_label }}</p>
                         </div>
                         <div class="p-4 border-r border-[#2a2a2a]">
                             <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Fecha Ops</p>
