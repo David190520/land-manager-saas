@@ -89,16 +89,28 @@ class ClientController extends Controller
         $reservations = $client->reservations->map(function ($r) {
             return [
                 'id' => $r->id,
-                'lot' => $r->lot->full_identifier,
-                'project' => $r->lot->block->project->name,
-                'lot_id' => $r->lot_id,
+                'lot' => [
+                    'id' => $r->lot->id,
+                    'lot_number' => $r->lot->lot_number,
+                    'area' => $r->lot->area,
+                    'block' => [
+                        'name' => $r->lot->block->name,
+                    ],
+                    'project' => [
+                        'name' => $r->lot->block->project->name,
+                    ],
+                ],
                 'down_payment' => (float) $r->down_payment,
-                'payment_deadline' => $r->payment_deadline->format('Y-m-d'),
+                'payment_deadline' => $r->payment_deadline ? $r->payment_deadline->format('Y-m-d') : null,
                 'status' => $r->status,
                 'status_label' => $r->status_label,
                 'created_at' => $r->created_at->format('Y-m-d'),
-                'has_payment_plan' => $r->paymentPlan !== null,
-                'payment_plan_id' => $r->paymentPlan?->id,
+                'payment_plan' => $r->paymentPlan ? [
+                    'id' => $r->paymentPlan->id,
+                    'progress' => $r->paymentPlan->progress_percentage,
+                    'paid_installments' => $r->paymentPlan->paid_installments_count,
+                    'total_installments' => $r->paymentPlan->total_installments,
+                ] : null,
             ];
         });
 
