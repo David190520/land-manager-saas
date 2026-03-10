@@ -22,6 +22,7 @@ class Project extends Model
         'price_per_m2',
         'status',
         'image_path',
+        'map_file',
     ];
 
     protected $casts = [

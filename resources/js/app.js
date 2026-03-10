@@ -34,7 +34,9 @@ import {
     RiCheckboxCircleLine,
     RiInformationLine,
     RiErrorWarningLine,
-    RiCoinLine
+    RiCoinLine,
+    MdEditOutlined,
+    MdMapOutlined,
 } from "oh-vue-icons/icons";
 
 addIcons(
@@ -64,7 +66,9 @@ addIcons(
     RiCheckboxCircleLine,
     RiInformationLine,
     RiErrorWarningLine,
-    RiCoinLine
+    RiCoinLine,
+    MdEditOutlined,
+    MdMapOutlined,
 );
 
 const appName = import.meta.env.VITE_APP_NAME || 'Land Manager';

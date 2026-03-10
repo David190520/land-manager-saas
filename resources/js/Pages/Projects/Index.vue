@@ -1,7 +1,10 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+
+const page = usePage();
+const isAdmin = computed(() => ['admin', 'accountant'].includes(page.props.auth.user.role));
 
 const props = defineProps({
     projects: Array,
@@ -16,6 +19,7 @@ const form = useForm({
     department: '',
     total_area: '',
     price_per_m2: '',
+    map_file: null,
 });
 
 const submit = () => {
@@ -38,7 +42,7 @@ const submit = () => {
                 <h1 class="text-2xl font-semibold text-white tracking-tight">Proyectos !</h1>
                 <p class="text-sm text-[#71717a] mt-1">Gestión de proyectos inmobiliarios</p>
             </div>
-            <button @click="showCreateModal = true" class="btn-primary">
+            <button v-if="isAdmin" @click="showCreateModal = true" class="btn-primary">
                 <v-icon name="md-add" scale="1" fill="black" class="mr-2" />
                 Nuevo
             </button>
@@ -51,7 +55,7 @@ const submit = () => {
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">No hay proyectos aún</h3>
             <p class="text-sm text-[#71717a] mb-6">Crea tu primer proyecto para comenzar</p>
-            <button @click="showCreateModal = true" class="btn-primary">
+            <button v-if="isAdmin" @click="showCreateModal = true" class="btn-primary">
                 Crear Proyecto
             </button>
         </div>
@@ -160,6 +164,14 @@ const submit = () => {
                                     <label class="label-dark">Precio base m²</label>
                                     <input v-model="form.price_per_m2" type="number" class="input-dark bg-[#141414]" placeholder="0" />
                                 </div>
+                            </div>
+                            <div>
+                                <label class="label-dark flex items-center gap-1">
+                                    <v-icon name="md-map-outlined" scale="0.8" /> Plano / Mapa del Proyecto
+                                </label>
+                                <input type="file" @input="form.map_file = $event.target.files[0]" accept=".pdf,.png,.jpg,.jpeg" class="input-dark bg-[#141414] file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-[#262626] file:text-white hover:file:bg-[#3f3f46] text-xs transition-colors" />
+                                <p v-if="form.errors.map_file" class="text-[#ef4444] text-[10px] mt-1">{{ form.errors.map_file }}</p>
+                                <p class="text-[9px] text-[#71717a] mt-1">Soporta PDF, PNG, JPG hasta 10MB.</p>
                             </div>
                             <div class="flex justify-end gap-3 pt-6 border-t border-[#2a2a2a] mt-6">
                                 <button type="button" @click="showCreateModal = false" class="btn-secondary">Cancelar</button>

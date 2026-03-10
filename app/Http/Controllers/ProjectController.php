@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -92,6 +93,7 @@ class ProjectController extends Controller
                 'reserved_lots' => $project->reserved_lots_count,
                 'sold_lots' => $project->sold_lots_count,
                 'pending_approval_lots' => $project->pending_approval_lots_count,
+                'map_file_url' => $project->map_file ? Storage::url($project->map_file) : null,
             ],
             'blocks' => $blocks,
         ]);
@@ -99,6 +101,8 @@ class ProjectController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizeAdminAction();
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -107,10 +111,15 @@ class ProjectController extends Controller
             'department' => 'nullable|string|max:255',
             'total_area' => 'nullable|numeric|min:0',
             'price_per_m2' => 'nullable|numeric|min:0',
+            'map_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
         $validated['tenant_id'] = $request->user()->tenant_id;
         $validated['slug'] = Str::slug($validated['name']) . '-' . Str::random(5);
+
+        if ($request->hasFile('map_file')) {
+            $validated['map_file'] = $request->file('map_file')->store('projects/maps', 'public');
+        }
 
         Project::create($validated);
 
@@ -119,6 +128,7 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project)
     {
+        $this->authorizeAdminAction();
         $this->authorizeProject($project);
 
         $validated = $request->validate([
@@ -130,7 +140,15 @@ class ProjectController extends Controller
             'total_area' => 'nullable|numeric|min:0',
             'price_per_m2' => 'nullable|numeric|min:0',
             'status' => 'in:active,paused,completed',
+            'map_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
+
+        if ($request->hasFile('map_file')) {
+            if ($project->map_file) {
+                Storage::disk('public')->delete($project->map_file);
+            }
+            $validated['map_file'] = $request->file('map_file')->store('projects/maps', 'public');
+        }
 
         $project->update($validated);
 
@@ -139,7 +157,13 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
+        $this->authorizeAdminAction();
         $this->authorizeProject($project);
+        
+        if ($project->map_file) {
+            Storage::disk('public')->delete($project->map_file);
+        }
+        
         $project->delete();
 
         return redirect()->route('projects.index')->with('success', 'Proyecto eliminado.');
@@ -149,6 +173,13 @@ class ProjectController extends Controller
     {
         if ($project->tenant_id !== request()->user()->tenant_id) {
             abort(403);
+        }
+    }
+
+    private function authorizeAdminAction(): void
+    {
+        if (!in_array(request()->user()->role, ['admin', 'accountant'])) {
+            abort(403, 'No tienes permiso para gestionar proyectos.');
         }
     }
 }

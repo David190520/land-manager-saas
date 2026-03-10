@@ -1,7 +1,11 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import Modal from '@/Components/Modal.vue';
+
+const page = usePage();
+const isAdmin = computed(() => ['admin', 'accountant'].includes(page.props.auth.user.role));
 
 const props = defineProps({
     project: Object,
@@ -10,6 +14,43 @@ const props = defineProps({
 
 const selectedBlock = ref(null);
 const statusFilter = ref('all');
+const showMapModal = ref(false);
+const showEditModal = ref(false);
+
+const form = useForm({
+    name: '',
+    description: '',
+    location: '',
+    municipality: '',
+    department: '',
+    total_area: '',
+    price_per_m2: '',
+    status: 'active',
+    map_file: null,
+    _method: 'PUT'
+});
+
+const openEditModal = () => {
+    form.name = props.project.name || '';
+    form.description = props.project.description || '';
+    form.location = props.project.location || '';
+    form.municipality = props.project.municipality || '';
+    form.department = props.project.department || '';
+    form.total_area = props.project.total_area || '';
+    form.price_per_m2 = props.project.price_per_m2 || '';
+    form.status = props.project.status || 'active';
+    form.map_file = null;
+    showEditModal.value = true;
+};
+
+const submitEdit = () => {
+    form.post(route('projects.update', props.project.id), {
+        onSuccess: () => {
+            showEditModal.value = false;
+        },
+        preserveScroll: true,
+    });
+};
 
 const filteredBlocks = computed(() => {
     if (!selectedBlock.value) return props.blocks;
@@ -70,6 +111,16 @@ const getFilteredLots = (lots) => {
                         {{ project.location }} • {{ project.municipality }}
                     </p>
                     <p v-if="project.description" class="text-xs text-[#71717a] mt-4 max-w-2xl leading-relaxed">{{ project.description }}</p>
+                    <div class="mt-5 flex gap-3">
+                        <button v-if="project.map_file_url" @click="showMapModal = true" class="btn-primary py-2 px-4 shadow-lg flex items-center gap-2">
+                            <v-icon name="md-map-outlined" scale="1" fill="black" />
+                            Ver plano del proyecto
+                        </button>
+                        <button v-if="isAdmin" @click="openEditModal" class="btn-secondary py-2 px-4 flex items-center gap-2">
+                            <v-icon name="md-edit-outlined" scale="1" />
+                            Editar Proyecto
+                        </button>
+                    </div>
                 </div>
                 <!-- Stats minimalist layout -->
                 <div class="grid grid-cols-5 gap-6 bg-[#141414] border border-[#2a2a2a] p-4 rounded-xl">
@@ -180,5 +231,109 @@ const getFilteredLots = (lots) => {
                 </div>
             </div>
         </div>
+
+        <!-- Map File Modal -->
+        <Modal :show="showMapModal" maxWidth="5xl" @close="showMapModal = false">
+            <div class="p-6 relative bg-[#18181a] rounded-2xl border border-[#2a2a2a]">
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-[#2a2a2a]">
+                    <h2 class="text-lg font-semibold text-white tracking-tight flex items-center gap-2">
+                        <v-icon name="md-map-outlined" scale="1.2" /> Plano de {{ project.name }}
+                    </h2>
+                    <button @click="showMapModal = false" class="text-[#71717a] hover:text-white transition-colors">
+                        <v-icon name="md-close" scale="1.2" />
+                    </button>
+                </div>
+                
+                <div class="w-full h-[70vh] rounded-lg overflow-hidden bg-[#121212] border border-[#2a2a2a] flex items-center justify-center">
+                    <iframe v-if="project.map_file_url && project.map_file_url.endsWith('.pdf')" :src="project.map_file_url" class="w-full h-full border-0"></iframe>
+                    <img v-else-if="project.map_file_url" :src="project.map_file_url" class="w-full h-full object-contain" alt="Plano del proyecto" />
+                    <div v-else class="text-center text-[#71717a]">
+                        <v-icon name="md-brokenimage-outlined" scale="2" class="mb-2" />
+                        <p>Plano no disponible</p>
+                    </div>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Edit Project Modal -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition-all duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition-all duration-200"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-[#000000] opacity-80 backdrop-blur-sm" @click="showEditModal = false"></div>
+                    <div class="relative w-full max-w-lg bg-[#18181a] border border-[#2a2a2a] rounded-2xl p-8 animate-slide-up shadow-2xl">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-semibold text-white tracking-tight">Editar Proyecto</h2>
+                            <button @click="showEditModal = false" class="text-[#71717a] hover:text-white">
+                                <v-icon name="md-close" />
+                            </button>
+                        </div>
+                        <form @submit.prevent="submitEdit" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                            <div>
+                                <label class="label-dark">Nombre del Proyecto</label>
+                                <input v-model="form.name" type="text" class="input-dark bg-[#141414]" placeholder="Ej: Proyecto Alfa" />
+                                <p v-if="form.errors.name" class="text-[#ef4444] text-[10px] mt-1">{{ form.errors.name }}</p>
+                            </div>
+                            <div>
+                                <label class="label-dark">Descripción</label>
+                                <textarea v-model="form.description" class="input-dark bg-[#141414]" rows="2" placeholder="Detalles generales..."></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="label-dark">Ubicación</label>
+                                    <input v-model="form.location" type="text" class="input-dark bg-[#141414]" placeholder="Sector" />
+                                    <p v-if="form.errors.location" class="text-[#ef4444] text-[10px] mt-1">{{ form.errors.location }}</p>
+                                </div>
+                                <div>
+                                    <label class="label-dark">Municipio</label>
+                                    <input v-model="form.municipality" type="text" class="input-dark bg-[#141414]" placeholder="Ciudad" />
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="label-dark">M² Totales</label>
+                                    <input v-model="form.total_area" type="number" class="input-dark bg-[#141414]" placeholder="0" />
+                                </div>
+                                <div>
+                                    <label class="label-dark">Precio base m²</label>
+                                    <input v-model="form.price_per_m2" type="number" class="input-dark bg-[#141414]" placeholder="0" />
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label class="label-dark">Estado del Proyecto</label>
+                                    <select v-model="form.status" class="input-dark bg-[#141414]">
+                                        <option value="active">Activo</option>
+                                        <option value="paused">Pausado</option>
+                                        <option value="completed">Completado</option>
+                                    </select>
+                                    <p v-if="form.errors.status" class="text-[#ef4444] text-[10px] mt-1">{{ form.errors.status }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="label-dark flex items-center gap-1">
+                                    <v-icon name="md-map-outlined" scale="0.8" /> Plano / Mapa del Proyecto
+                                </label>
+                                <input type="file" @input="form.map_file = $event.target.files[0]" accept=".pdf,.png,.jpg,.jpeg" class="input-dark bg-[#141414] file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-[#262626] file:text-white hover:file:bg-[#3f3f46] text-xs transition-colors" />
+                                <p v-if="form.errors.map_file" class="text-[#ef4444] text-[10px] mt-1">{{ form.errors.map_file }}</p>
+                                <p class="text-[9px] text-[#71717a] mt-1">Soporta PDF, PNG, JPG hasta 10MB. Al subir uno nuevo reemplazará al anterior.</p>
+                            </div>
+                            <div class="flex justify-end gap-3 pt-6 border-t border-[#2a2a2a] mt-6">
+                                <button type="button" @click="showEditModal = false" class="btn-secondary">Cancelar</button>
+                                <button type="submit" class="btn-primary" :disabled="form.processing">
+                                    {{ form.processing ? 'Guardando...' : 'Guardar Cambios' }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
     </AppLayout>
 </template>
