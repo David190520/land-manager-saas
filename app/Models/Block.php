@@ -40,4 +40,9 @@ class Block extends Model
     {
         return $this->lots()->where('status', 'sold')->count();
     }
+
+    public function getPendingApprovalLotsCountAttribute(): int
+    {
+        return $this->lots()->where('status', 'pending_approval')->count();
+    }
 }

@@ -30,6 +30,7 @@ const getStatusClasses = (status) => {
         'available': 'bg-[#18181a] border-[#2a2a2a] hover:border-white/20 text-white',
         'reserved': 'bg-[#121212] border-[#3f3f46] hover:border-white/40 text-[#a1a1aa]',
         'sold': 'bg-[#0a0a0a] border-[#1e1e1e] hover:border-[#2a2a2a] text-[#71717a] opacity-50',
+        'pending_approval': 'bg-amber-500/10 border-amber-500/20 hover:border-amber-500/40 text-amber-500/90',
     }[status] || 'bg-[#18181a] border-[#2a2a2a] hover:border-[#3f3f46] text-white';
 };
 
@@ -38,6 +39,7 @@ const getStatusLabelColor = (status) => {
         'available': 'text-white font-semibold',
         'reserved': 'text-[#a1a1aa]',
         'sold': 'text-[#71717a]',
+        'pending_approval': 'text-amber-500 font-bold',
     }[status] || 'text-[#71717a]';
 };
 
@@ -70,22 +72,26 @@ const getFilteredLots = (lots) => {
                     <p v-if="project.description" class="text-xs text-[#71717a] mt-4 max-w-2xl leading-relaxed">{{ project.description }}</p>
                 </div>
                 <!-- Stats minimalist layout -->
-                <div class="grid grid-cols-4 gap-6 bg-[#141414] border border-[#2a2a2a] p-4 rounded-xl">
+                <div class="grid grid-cols-5 gap-6 bg-[#141414] border border-[#2a2a2a] p-4 rounded-xl">
                     <div class="text-center">
                         <p class="text-xl font-semibold text-white">{{ project.total_lots }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Total</p>
                     </div>
                     <div class="text-center">
                         <p class="text-xl font-semibold text-white">{{ project.available_lots }}</p>
-                        <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Disp.</p>
+                        <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Disponibles</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xl font-semibold text-amber-500">{{ project.pending_approval_lots }}</p>
+                        <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Pendientes</p>
                     </div>
                     <div class="text-center">
                         <p class="text-xl font-semibold text-[#a1a1aa]">{{ project.reserved_lots }}</p>
-                        <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Resrv.</p>
+                        <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Reservados</p>
                     </div>
                     <div class="text-center">
                         <p class="text-xl font-semibold text-[#71717a]">{{ project.sold_lots }}</p>
-                        <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Vend.</p>
+                        <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Vendidos</p>
                     </div>
                 </div>
             </div>
@@ -93,18 +99,19 @@ const getFilteredLots = (lots) => {
 
         <!-- Filter Bar -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 animate-slide-up" style="animation-delay: 100ms">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
                 <button
                     v-for="filter in [
                         { key: 'all', label: 'Todos', count: project.total_lots },
-                        { key: 'available', label: 'Disp.', count: project.available_lots },
-                        { key: 'reserved', label: 'Resrv.', count: project.reserved_lots },
-                        { key: 'sold', label: 'Vend.', count: project.sold_lots },
+                        { key: 'available', label: 'Disponibles', count: project.available_lots },
+                        { key: 'pending_approval', label: 'Pendientes', count: project.pending_approval_lots },
+                        { key: 'reserved', label: 'Reservados', count: project.reserved_lots },
+                        { key: 'sold', label: 'Vendidos', count: project.sold_lots },
                     ]"
                     :key="filter.key"
                     @click="statusFilter = filter.key"
                     :class="[
-                        'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border',
+                        'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border whitespace-nowrap',
                         statusFilter === filter.key
                             ? 'bg-white text-black border-white'
                             : 'bg-[#18181a] border-[#2a2a2a] text-[#a1a1aa] hover:text-white hover:border-[#3f3f46]'
@@ -137,6 +144,7 @@ const getFilteredLots = (lots) => {
                         <span>{{ block.total_lots }} LOT.</span>
                         <span>•</span>
                         <span class="text-white">{{ block.available_lots }} DISP</span>
+                        <span class="text-amber-500">{{ block.pending_approval_lots }} PEND.</span>
                         <span class="text-[#a1a1aa]">{{ block.reserved_lots }} RES.</span>
                         <span class="text-[#71717a]">{{ block.sold_lots }} VND.</span>
                     </div>

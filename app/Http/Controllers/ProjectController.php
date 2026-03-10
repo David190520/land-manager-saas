@@ -60,6 +60,7 @@ class ProjectController extends Controller
                     'available_lots' => $block->available_lots_count,
                     'reserved_lots' => $block->reserved_lots_count,
                     'sold_lots' => $block->sold_lots_count,
+                    'pending_approval_lots' => $block->pending_approval_lots_count,
                     'lots' => $block->lots->map(function ($lot) {
                         return [
                             'id' => $lot->id,
@@ -90,6 +91,7 @@ class ProjectController extends Controller
                 'available_lots' => $project->available_lots_count,
                 'reserved_lots' => $project->reserved_lots_count,
                 'sold_lots' => $project->sold_lots_count,
+                'pending_approval_lots' => $project->pending_approval_lots_count,
             ],
             'blocks' => $blocks,
         ]);

@@ -21,6 +21,9 @@ class ReservationController extends Controller
             // Payment plan fields
             'total_installments' => 'required|integer|min:1|max:120',
             'start_date' => 'required|date|after_or_equal:today',
+        ], [
+            'payment_deadline.after' => 'La fecha límite de consignación debe ser posterior a hoy.',
+            'start_date.after_or_equal' => 'El inicio del cobro no puede ser previo a la fecha actual.',
         ]);
 
         $lot = Lot::with('block.project')->findOrFail($validated['lot_id']);
