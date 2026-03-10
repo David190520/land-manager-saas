@@ -43,6 +43,7 @@ class LotController extends Controller
                 'payment_deadline' => $r->payment_deadline->format('Y-m-d'),
                 'status' => $r->status,
                 'status_label' => $r->status_label,
+                'payment_proof' => $r->payment_proof,
                 'created_at' => $r->created_at->format('Y-m-d'),
                 'payment_plan' => $r->paymentPlan ? [
                     'id' => $r->paymentPlan->id,

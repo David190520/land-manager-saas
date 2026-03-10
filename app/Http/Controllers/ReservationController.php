@@ -43,6 +43,10 @@ class ReservationController extends Controller
             $proofPath = $request->file('payment_proof')->store('payment_proofs', 'public');
         }
 
+        // Determine initial status based on user role
+        $isAdminOrAccountant = in_array($request->user()->role, ['admin', 'accountant']);
+        $initialStatus = $isAdminOrAccountant ? 'active' : 'pending_approval';
+
         // Create reservation
         $reservation = Reservation::create([
             'lot_id' => $validated['lot_id'],
@@ -52,11 +56,12 @@ class ReservationController extends Controller
             'payment_deadline' => $validated['payment_deadline'],
             'payment_proof' => $proofPath,
             'notes' => $validated['notes'] ?? null,
-            'status' => 'pending_approval',
+            'status' => $initialStatus,
         ]);
 
         // Update lot status
-        $lot->update(['status' => 'pending_approval']);
+        $lotStatus = $isAdminOrAccountant ? 'reserved' : 'pending_approval';
+        $lot->update(['status' => $lotStatus]);
 
         // Generate payment plan
         $amortization = new AmortizationService();
@@ -68,7 +73,11 @@ class ReservationController extends Controller
             reservationId: $reservation->id,
         );
 
-        return redirect()->route('lots.show', $lot)->with('success', 'Reserva creada y pendiente de aprobación.');
+        $message = $isAdminOrAccountant
+            ? 'Reserva creada y aprobada (Acceso Administrativo).'
+            : 'Reserva creada y pendiente de aprobación.';
+
+        return redirect()->route('lots.show', $lot)->with('success', $message);
     }
 
     public function cancel(Reservation $reservation)

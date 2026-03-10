@@ -39,7 +39,7 @@ class Lot extends Model
 
     public function activeReservation(): HasOne
     {
-        return $this->hasOne(Reservation::class)->whereIn('status', ['active', 'confirmed'])->latest();
+        return $this->hasOne(Reservation::class)->whereIn('status', ['active', 'confirmed', 'pending_approval'])->latest();
     }
 
     public function getFullIdentifierAttribute(): string
