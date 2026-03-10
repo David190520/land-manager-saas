@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 const props = defineProps({
     lot: Object,
@@ -15,9 +16,27 @@ const isAdmin = computed(() => {
 });
 
 const showReservationForm = ref(false);
-const showPaymentPlanLink = computed(() => {
-    return props.reservation?.payment_plan?.id;
+const confirmDialog = ref({
+    show: false,
+    title: '',
+    message: '',
+    confirmText: '',
+    type: 'info',
+    action: null
 });
+
+const openConfirm = (title, message, confirmText, type, action) => {
+    confirmDialog.value = { show: true, title, message, confirmText, type, action };
+};
+
+const closeConfirm = () => {
+    confirmDialog.value.show = false;
+};
+
+const executeConfirm = () => {
+    if (confirmDialog.value.action) confirmDialog.value.action();
+    closeConfirm();
+};
 
 const form = useForm({
     lot_id: props.lot.id,
@@ -45,21 +64,33 @@ const handleProofUpload = (event) => {
 };
 
 const cancelReservation = () => {
-    if (confirm('¿Está seguro de cancelar esta reserva? El lote quedará disponible nuevamente.')) {
-        router.post(route('reservations.cancel', props.reservation.id));
-    }
+    openConfirm(
+        'Liberar Inmueble',
+        '¿Está seguro de cancelar esta reserva? El lote quedará disponible para la venta nuevamente de forma inmediata.',
+        'Liberar Lote',
+        'danger',
+        () => router.post(route('reservations.cancel', props.reservation.id))
+    );
 };
 
 const confirmReservation = () => {
-    if (confirm('¿Confirmar la venta de este lote?')) {
-        router.post(route('reservations.confirm', props.reservation.id));
-    }
+    openConfirm(
+        'Consolidar Venta',
+        '¿Desea marcar este lote como vendido definitivamente? Esta acción registrará la propiedad a nombre del cliente.',
+        'Confirmar Venta',
+        'info',
+        () => router.post(route('reservations.confirm', props.reservation.id))
+    );
 };
 
 const approveReservation = () => {
-    if (confirm('¿Aprobar esta reserva?')) {
-        router.post(route('reservations.approve', props.reservation.id));
-    }
+    openConfirm(
+        'Aprobar Solicitud',
+        'Al aprobar esta reserva, el lote pasará a estado Reservado y se activará el plan de pagos correspondiente.',
+        'Aprobar Ahora',
+        'success',
+        () => router.post(route('reservations.approve', props.reservation.id))
+    );
 };
 
 const formatCurrency = (value) => {
@@ -80,6 +111,16 @@ const estimatedInstallment = computed(() => {
 <template>
     <AppLayout>
         <Head :title="`Lote ${lot.lot_number} - ${lot.block.name}`" />
+
+        <ConfirmModal 
+            :show="confirmDialog.show"
+            :title="confirmDialog.title"
+            :message="confirmDialog.message"
+            :confirmText="confirmDialog.confirmText"
+            :type="confirmDialog.type"
+            @close="closeConfirm"
+            @confirm="executeConfirm"
+        />
 
         <!-- Breadcrumb -->
         <div class="flex items-center gap-2 text-xs text-[#71717a] mb-8 animate-fade-in font-medium">
@@ -163,7 +204,7 @@ const estimatedInstallment = computed(() => {
                     </div>
 
                     <!-- Reservation Details Table -->
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-0 mb-8 border border-[#2a2a2a] rounded-xl overflow-hidden bg-[#121212]">
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-0 mb-8 border border-[#2a2a2a] rounded-xl overflow-hidden bg-[#121212]">
                         <div class="p-4 border-r border-b lg:border-b-0 border-[#2a2a2a]">
                             <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Enganche</p>
                             <p class="text-sm font-bold text-white">{{ formatCurrency(reservation.down_payment) }}</p>
@@ -172,13 +213,17 @@ const estimatedInstallment = computed(() => {
                             <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Vence</p>
                             <p class="text-sm font-bold text-white">{{ reservation.payment_deadline }}</p>
                         </div>
-                        <div class="p-4 border-r border-[#2a2a2a]">
+                        <div class="p-4 border-r border-b lg:border-b-0 border-[#2a2a2a]">
                             <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Estado</p>
                             <p class="text-[10px] font-bold text-white uppercase tracking-wider">{{ reservation.status_label }}</p>
                         </div>
-                        <div class="p-4">
+                        <div class="p-4 border-r border-[#2a2a2a]">
                             <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Fecha Ops</p>
                             <p class="text-xs font-semibold text-[#a1a1aa]">{{ reservation.created_at.split('T')[0] }}</p>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Asesor</p>
+                            <p class="text-xs font-semibold text-white truncate">{{ reservation.agent.name }}</p>
                         </div>
                     </div>
 
@@ -216,10 +261,10 @@ const estimatedInstallment = computed(() => {
                         <button v-if="reservation.status === 'pending_approval' && isAdmin" @click="approveReservation" class="btn-primary flex-1 bg-green-600 hover:bg-green-500 text-white">
                             Aprobar Reserva
                         </button>
-                        <button v-if="reservation.status === 'active'" @click="confirmReservation" class="btn-primary flex-1">
+                        <button v-if="reservation.status === 'active' && isAdmin" @click="confirmReservation" class="btn-primary flex-1">
                             Confirmar Propiedad
                         </button>
-                        <button v-if="['active', 'pending_approval'].includes(reservation.status)" @click="cancelReservation" class="btn-secondary flex-1">
+                        <button v-if="['active', 'pending_approval'].includes(reservation.status) && isAdmin" @click="cancelReservation" class="btn-secondary flex-1">
                             Liberar Lote
                         </button>
                     </div>

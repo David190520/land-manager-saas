@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import Toast from '@/Components/Toast.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -118,22 +119,8 @@ const roleLabel = computed(() => {
 
         <!-- Main Content -->
         <main class="flex-1 lg:ml-64 min-h-screen relative">
+            <Toast />
             <div class="p-6 lg:p-10">
-                <!-- Flash messages -->
-                <Transition
-                    enter-active-class="transition-all duration-300"
-                    enter-from-class="opacity-0 -translate-y-2"
-                    enter-to-class="opacity-100 translate-y-0"
-                    leave-active-class="transition-all duration-200"
-                    leave-from-class="opacity-100"
-                    leave-to-class="opacity-0"
-                >
-                    <div v-if="$page.props.flash?.success" class="mb-6 px-4 py-3 rounded-xl bg-[#1e1e1e] border border-[#3f3f46] text-[#ededed] text-sm flex items-center gap-3">
-                        <v-icon name="ri-checkbox-circle-line" fill="#ededed" />
-                        {{ $page.props.flash.success }}
-                    </div>
-                </Transition>
-
                 <slot />
             </div>
         </main>

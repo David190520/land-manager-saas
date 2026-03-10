@@ -11,7 +11,7 @@ class LotController extends Controller
 {
     public function show(Lot $lot)
     {
-        $lot->load(['block.project', 'activeReservation.client', 'activeReservation.paymentPlan.payments']);
+        $lot->load(['block.project', 'activeReservation.client', 'activeReservation.user', 'activeReservation.paymentPlan.payments']);
 
         $tenantId = request()->user()->tenant_id;
         if ($lot->block->project->tenant_id !== $tenantId) {
@@ -38,6 +38,10 @@ class LotController extends Controller
                     'document_number' => $r->client->document_number,
                     'phone' => $r->client->phone,
                     'email' => $r->client->email,
+                ],
+                'agent' => [
+                    'id' => $r->user->id,
+                    'name' => $r->user->name,
                 ],
                 'down_payment' => (float) $r->down_payment,
                 'payment_deadline' => $r->payment_deadline->format('Y-m-d'),

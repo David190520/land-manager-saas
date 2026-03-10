@@ -22,6 +22,7 @@ import {
     MdLocationonOutlined,
     MdWarningamberOutlined,
     MdAttachfileOutlined,
+    MdAttachfile,
     MdDeleteoutline,
     MdDownload,
     MdKeyboardarrowright,
@@ -32,6 +33,7 @@ import {
     RiLandscapeLine,
     RiCheckboxCircleLine,
     RiInformationLine,
+    RiErrorWarningLine,
     RiCoinLine
 } from "oh-vue-icons/icons";
 
@@ -50,6 +52,7 @@ addIcons(
     MdLocationonOutlined,
     MdWarningamberOutlined,
     MdAttachfileOutlined,
+    MdAttachfile,
     MdDeleteoutline,
     MdDownload,
     MdKeyboardarrowright,
@@ -60,6 +63,7 @@ addIcons(
     RiLandscapeLine,
     RiCheckboxCircleLine,
     RiInformationLine,
+    RiErrorWarningLine,
     RiCoinLine
 );
 

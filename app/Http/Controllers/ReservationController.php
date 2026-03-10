@@ -87,8 +87,12 @@ class ReservationController extends Controller
             abort(403);
         }
 
-        if (!in_array($reservation->status, ['active'])) {
-            return redirect()->back()->withErrors(['status' => 'Solo se pueden cancelar reservas activas.']);
+        if (!in_array(request()->user()->role, ['admin', 'accountant'])) {
+            abort(403, 'No autorizado.');
+        }
+
+        if (!in_array($reservation->status, ['active', 'pending_approval'])) {
+            return redirect()->back()->withErrors(['status' => 'Solo se pueden cancelar reservas activas o pendientes.']);
         }
 
         $reservation->update([
@@ -112,6 +116,10 @@ class ReservationController extends Controller
             abort(403);
         }
 
+        if (!in_array(request()->user()->role, ['admin', 'accountant'])) {
+            abort(403, 'No autorizado.');
+        }
+
         if ($reservation->status !== 'active') {
             return redirect()->back()->withErrors(['status' => 'Solo se pueden confirmar reservas activas.']);
         }
@@ -133,7 +141,7 @@ class ReservationController extends Controller
             abort(403);
         }
 
-        if (!request()->user()->isAdmin()) {
+        if (!in_array(request()->user()->role, ['admin', 'accountant'])) {
             abort(403, 'No autorizado.');
         }
 
