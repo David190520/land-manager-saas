@@ -192,12 +192,12 @@ const getFilteredLots = (lots) => {
                 <div class="flex items-center gap-4 mb-4 pb-2 border-b border-[#2a2a2a]">
                     <h3 class="text-sm font-semibold text-white tracking-widest">{{ block.name }}</h3>
                     <div class="flex items-center gap-3 text-[10px] uppercase font-semibold text-[#71717a] tracking-wider">
-                        <span>{{ block.total_lots }} LOT.</span>
+                        <span>{{ block.total_lots }} L</span>
                         <span>•</span>
-                        <span class="text-white">{{ block.available_lots }} DISP</span>
-                        <span class="text-amber-500">{{ block.pending_approval_lots }} PEND.</span>
-                        <span class="text-blue-500">{{ block.reserved_lots }} RES.</span>
-                        <span class="text-red-500">{{ block.sold_lots }} VND.</span>
+                        <span class="text-white">{{ block.available_lots }} D</span>
+                        <span class="text-amber-500">{{ block.pending_approval_lots }} P</span>
+                        <span class="text-blue-500">{{ block.reserved_lots }} R</span>
+                        <span class="text-red-500">{{ block.sold_lots }} V</span>
                     </div>
                 </div>
 

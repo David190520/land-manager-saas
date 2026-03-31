@@ -39,7 +39,7 @@ const submit = () => {
         <!-- Header -->
         <div class="flex items-center justify-between mb-8 animate-fade-in">
             <div>
-                <h1 class="text-2xl font-semibold text-white tracking-tight">Proyectos !</h1>
+                <h1 class="text-2xl font-semibold text-white tracking-tight">Proyectos</h1>
                 <p class="text-sm text-[#71717a] mt-1">Gestión de proyectos inmobiliarios</p>
             </div>
             <button v-if="isAdmin" @click="showCreateModal = true" class="btn-primary">

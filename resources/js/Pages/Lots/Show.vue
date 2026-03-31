@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import CreateClientModal from '@/Pages/Clients/Partials/CreateClientModal.vue';
 
 const props = defineProps({
     lot: Object,
@@ -16,6 +17,7 @@ const isAdmin = computed(() => {
 });
 
 const showReservationForm = ref(false);
+const showCreateClientModal = ref(false);
 const confirmDialog = ref({
     show: false,
     title: '',
@@ -141,6 +143,11 @@ const getStatusTextClasses = (status) => {
             :type="confirmDialog.type"
             @close="closeConfirm"
             @confirm="executeConfirm"
+        />
+
+        <CreateClientModal 
+            :show="showCreateClientModal" 
+            @close="showCreateClientModal = false" 
         />
 
         <!-- Breadcrumb -->
@@ -305,15 +312,15 @@ const getStatusTextClasses = (status) => {
                         <div>
                             <label class="label-dark">Seleccione Cliente Titular</label>
                             <select v-model="form.client_id" class="input-dark bg-[#121212]">
-                                <option value="">--- Seleccionar del padrón ---</option>
+                                <option value="">Seleccionar cliente</option>
                                 <option v-for="client in clients" :key="client.id" :value="client.id">
                                     {{ client.full_name }} ({{ client.document_number }})
                                 </option>
                             </select>
                             <p v-if="form.errors.client_id" class="text-red-400 text-xs mt-1">{{ form.errors.client_id }}</p>
-                            <Link :href="route('clients.create')" class="text-[10px] text-white underline mt-2 inline-block hover:opacity-75">
+                            <button type="button" @click="showCreateClientModal = true" class="text-[10px] text-white underline mt-2 inline-block hover:opacity-75">
                                 Registrar nuevo perfil
-                            </Link>
+                            </button>
                         </div>
 
                         <div class="grid grid-cols-2 gap-6 pt-4 border-t border-[#2a2a2a]">

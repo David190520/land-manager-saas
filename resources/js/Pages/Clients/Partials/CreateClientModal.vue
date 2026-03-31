@@ -68,28 +68,28 @@ const closeModal = () => {
                     </h3>
                     <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <label class="label-dark">Pre-Nombres *</label>
+                            <label class="label-dark">Nombres *</label>
                             <input v-model="form.first_name" type="text" class="input-dark bg-[#121212] border-[#2a2a2a] focus:border-white focus:ring-0" placeholder="EJ: Juan" />
                             <p v-if="form.errors.first_name" class="text-red-400 text-[10px] mt-1">{{ form.errors.first_name }}</p>
                         </div>
                         <div>
-                            <label class="label-dark">Apellidos Familiares *</label>
+                            <label class="label-dark">Apellidos *</label>
                             <input v-model="form.last_name" type="text" class="input-dark bg-[#121212] border-[#2a2a2a] focus:border-white focus:ring-0" placeholder="EJ: Perez" />
                             <p v-if="form.errors.last_name" class="text-red-400 text-[10px] mt-1">{{ form.errors.last_name }}</p>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-6 mt-6">
                         <div>
-                            <label class="label-dark">Categoría DNI *</label>
+                            <label class="label-dark">Tipo de Identificación *</label>
                             <select v-model="form.document_type" class="input-dark bg-[#121212] border-[#2a2a2a] focus:border-white focus:ring-0">
-                                <option value="CC">Cédula Civ.</option>
-                                <option value="CE">Cédula Ext.</option>
-                                <option value="NIT">Matrícula (NIT)</option>
-                                <option value="Pasaporte">Pasaporte Int.</option>
+                                <option value="CC">Cédula de Ciudadanía</option>
+                                <option value="CE">Cédula de Extranjería</option>
+                                <option value="NIT">NIT</option>
+                                <option value="Pasaporte">Pasaporte</option>
                             </select>
                         </div>
                         <div>
-                            <label class="label-dark">Folio/Número *</label>
+                            <label class="label-dark">Número de Identificación *</label>
                             <input v-model="form.document_number" type="text" class="input-dark bg-[#121212] border-[#2a2a2a] focus:border-white focus:ring-0" placeholder="Nro de Identificación" />
                             <p v-if="form.errors.document_number" class="text-red-400 text-[10px] mt-1">{{ form.errors.document_number }}</p>
                         </div>
@@ -105,12 +105,12 @@ const closeModal = () => {
                         </h3>
                         <div class="space-y-4">
                             <div>
-                                <label class="label-dark">Nro. Primario *</label>
+                                <label class="label-dark">Nro. de celular *</label>
                                 <input v-model="form.phone" type="text" class="input-dark bg-[#121212] border-[#2a2a2a]" placeholder="+57 XXX XXX XXXX" />
                                 <p v-if="form.errors.phone" class="text-red-400 text-[10px] mt-1">{{ form.errors.phone }}</p>
                             </div>
                             <div>
-                                <label class="label-dark">Casilla Digital (Email)</label>
+                                <label class="label-dark">Correo electrónico (Email)</label>
                                 <input v-model="form.email" type="email" class="input-dark bg-[#121212] border-[#2a2a2a]" placeholder="titular@dominio.com" />
                                 <p v-if="form.errors.email" class="text-red-400 text-[10px] mt-1">{{ form.errors.email }}</p>
                             </div>
@@ -123,15 +123,15 @@ const closeModal = () => {
                         </h3>
                         <div class="space-y-4">
                             <div>
-                                <label class="label-dark">Ciudad / Depto</label>
+                                <label class="label-dark">Ciudad / Departamento</label>
                                 <div class="grid grid-cols-2 gap-3">
-                                    <input v-model="form.city" type="text" class="input-dark bg-[#121212] border-[#2a2a2a]" placeholder="Municipio" />
-                                    <input v-model="form.department" type="text" class="input-dark bg-[#121212] border-[#2a2a2a]" placeholder="Depto" />
+                                    <input v-model="form.city" type="text" class="input-dark bg-[#121212] border-[#2a2a2a]" placeholder="Ciudad/Municipio" />
+                                    <input v-model="form.department" type="text" class="input-dark bg-[#121212] border-[#2a2a2a]" placeholder="Departamento" />
                                 </div>
                             </div>
                             <div>
-                                <label class="label-dark">Gremio / Ejercicio</label>
-                                <input v-model="form.occupation" type="text" class="input-dark bg-[#121212] border-[#2a2a2a]" placeholder="Naturaleza de Trabajo" />
+                                <label class="label-dark">Ocupación / Profesión</label>
+                                <input v-model="form.occupation" type="text" class="input-dark bg-[#121212] border-[#2a2a2a]" placeholder="Entorno laboral" />
                             </div>
                         </div>
                     </div>
