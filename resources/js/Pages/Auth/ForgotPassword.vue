@@ -23,45 +23,49 @@ const submit = () => {
 
 <template>
     <GuestLayout>
-        <Head title="Forgot Password" />
+        <Head title="Recuperar Contraseña" />
 
-        <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email
-            address and we will email you a password reset link that will allow
-            you to choose a new one.
+        <div class="mb-6 border-b border-[#2a2a2a] pb-4">
+            <h2 class="text-sm font-bold text-white tracking-[0.1em] uppercase">Recuperar Acceso</h2>
         </div>
 
-        <div
-            v-if="status"
-            class="mb-4 text-sm font-medium text-green-600"
-        >
+        <div class="mb-6 text-xs font-medium text-[#71717a] leading-relaxed uppercase tracking-wider">
+            ¿Olvidaste tu contraseña? No hay problema. Solo dinos tu dirección de correo electrónico y te enviaremos un enlace para restablecerla.
+        </div>
+
+        <div v-if="status" class="mb-4 text-xs font-bold uppercase tracking-wider text-green-400 bg-green-500/10 p-3 rounded-lg border border-green-500/20">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit">
+        <form @submit.prevent="submit" class="space-y-6">
             <div>
-                <InputLabel for="email" value="Email" />
+                <label class="label-dark uppercase tracking-wider text-[10px] font-bold">Correo Electrónico</label>
 
-                <TextInput
+                <input
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="input-dark bg-[#141414]"
                     v-model="form.email"
                     required
                     autofocus
                     autocomplete="username"
+                    placeholder="ejemplo@correo.com"
                 />
 
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
+            <div class="pt-4 border-t border-[#2a2a2a] flex items-center justify-between">
+                <Link :href="route('login')" class="text-[10px] font-bold text-[#71717a] hover:text-white uppercase tracking-widest transition-colors">
+                    Volver al login
+                </Link>
+                <button
+                    class="btn-primary"
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
-                    Email Password Reset Link
-                </PrimaryButton>
+                    Enviar enlace
+                </button>
             </div>
         </form>
     </GuestLayout>

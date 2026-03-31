@@ -7,6 +7,7 @@
     <meta name="description" content="Land Manager SaaS - Sistema de gestión de lotes para constructoras">
 
     <title inertia>{{ config('app.name', 'Land Manager') }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
