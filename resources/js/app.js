@@ -37,6 +37,9 @@ import {
     RiCoinLine,
     MdEditOutlined,
     MdMapOutlined,
+    MdLogin,
+    MdCalculateOutlined,
+    MdEdit,
 } from "oh-vue-icons/icons";
 
 addIcons(
@@ -69,6 +72,9 @@ addIcons(
     RiCoinLine,
     MdEditOutlined,
     MdMapOutlined,
+    MdLogin,
+    MdCalculateOutlined,
+    MdEdit,
 );
 
 const appName = import.meta.env.VITE_APP_NAME || 'Land Manager';

@@ -88,6 +88,7 @@ class LotController extends Controller
                 'project' => [
                     'id' => $lot->block->project->id,
                     'name' => $lot->block->project->name,
+                    'price_per_m2' => (float) $lot->block->project->price_per_m2,
                 ],
             ],
             'reservation' => $reservation,
@@ -103,6 +104,9 @@ class LotController extends Controller
         }
 
         $validated = $request->validate([
+            'area' => 'nullable|numeric|min:0',
+            'front_length' => 'nullable|numeric|min:0',
+            'depth_length' => 'nullable|numeric|min:0',
             'price' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
         ]);

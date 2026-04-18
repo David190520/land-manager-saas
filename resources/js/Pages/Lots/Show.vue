@@ -1,7 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import Modal from '@/Components/Modal.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import CreateClientModal from '@/Pages/Clients/Partials/CreateClientModal.vue';
 
@@ -18,6 +19,7 @@ const isAdmin = computed(() => {
 
 const showReservationForm = ref(false);
 const showCreateClientModal = ref(false);
+const showEditLotModal = ref(false);
 const confirmDialog = ref({
     show: false,
     title: '',
@@ -38,6 +40,34 @@ const closeConfirm = () => {
 const executeConfirm = () => {
     if (confirmDialog.value.action) confirmDialog.value.action();
     closeConfirm();
+};
+
+const lotForm = useForm({
+    area: props.lot.area,
+    front_length: props.lot.front_length,
+    depth_length: props.lot.depth_length,
+    price: props.lot.price,
+    notes: props.lot.notes,
+});
+
+const calculateArea = () => {
+    if (lotForm.front_length && lotForm.depth_length) {
+        lotForm.area = lotForm.front_length * lotForm.depth_length;
+        calculatePrice();
+    }
+};
+
+const calculatePrice = () => {
+    if (lotForm.area && props.lot.project.price_per_m2) {
+        lotForm.price = lotForm.area * props.lot.project.price_per_m2;
+    }
+};
+
+const submitEditLot = () => {
+    lotForm.put(route('lots.update', props.lot.id), {
+        onSuccess: () => showEditLotModal.value = false,
+        preserveScroll: true,
+    });
 };
 
 const form = useForm({
@@ -145,6 +175,66 @@ const getStatusTextClasses = (status) => {
             @confirm="executeConfirm"
         />
 
+        <Modal :show="showEditLotModal" maxWidth="md" @close="showEditLotModal = false">
+            <div class="p-8 relative overflow-hidden bg-[#18181a]">
+                <div class="flex items-center justify-between mb-8 pb-4 border-b border-[#2a2a2a]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-[#262626] border border-[#3f3f46] flex items-center justify-center">
+                            <v-icon name="md-edit-outlined" scale="1.1" fill="white" />
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-white tracking-tight">Editar Lote</h2>
+                            <p class="text-[10px] text-[#71717a] font-bold uppercase tracking-widest">Dimensiones y Precio</p>
+                        </div>
+                    </div>
+                    <button @click="showEditLotModal = false" class="p-2 text-[#71717a] hover:text-white transition-colors">
+                        <v-icon name="md-close" scale="1.2" />
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitEditLot" class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="label-dark">Frente (mts)</label>
+                            <input v-model="lotForm.front_length" @input="calculateArea" type="number" step="0.01" class="input-dark bg-[#121212]" placeholder="Ej: 10" />
+                        </div>
+                        <div>
+                            <label class="label-dark">Fondo (mts)</label>
+                            <input v-model="lotForm.depth_length" @input="calculateArea" type="number" step="0.01" class="input-dark bg-[#121212]" placeholder="Ej: 20" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="label-dark">Área Total M²</label>
+                        <div class="flex gap-2">
+                            <input v-model="lotForm.area" type="number" step="0.01" class="input-dark bg-[#121212] flex-1" placeholder="Ej: 200" />
+                            <button type="button" @click="calculatePrice" class="btn-secondary px-3" title="Calcular Precio" v-if="props.lot.project.price_per_m2">
+                                <v-icon name="md-calculate-outlined" scale="1.2" />
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-[#71717a] mt-1" v-if="props.lot.project.price_per_m2">Base calculable: {{ formatCurrency(props.lot.project.price_per_m2) }} / m²</p>
+                    </div>
+
+                    <div>
+                        <label class="label-dark">Precio Base (COP)</label>
+                        <input v-model="lotForm.price" type="number" class="input-dark bg-[#121212]" placeholder="Valor total" required />
+                    </div>
+                    
+                    <div>
+                        <label class="label-dark">Notas internas (Morfología, esquina, etc)</label>
+                        <textarea v-model="lotForm.notes" rows="2" class="input-dark bg-[#121212]"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-6 border-t border-[#2a2a2a]">
+                        <button type="button" @click="showEditLotModal = false" class="btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn-primary" :disabled="lotForm.processing">
+                            {{ lotForm.processing ? 'Guardando...' : 'Actualizar' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
         <CreateClientModal 
             :show="showCreateClientModal" 
             @close="showCreateClientModal = false" 
@@ -198,6 +288,14 @@ const getStatusTextClasses = (status) => {
                         >
                             <v-icon name="md-add" fill="black" />
                             <span>Reservar Inmueble</span>
+                        </button>
+                        <button
+                            v-if="isAdmin"
+                            @click="showEditLotModal = true"
+                            class="w-full btn-secondary py-3 flex items-center justify-center gap-2"
+                        >
+                            <v-icon name="md-edit-outlined" />
+                            <span>Editar Lote</span>
                         </button>
                     </div>
                 </div>

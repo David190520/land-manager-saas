@@ -115,6 +115,8 @@ class ProjectController extends Controller
             'blocks' => 'nullable|array',
             'blocks.*.name' => 'required|string',
             'blocks.*.lots' => 'required|integer|min:1',
+            'blocks.*.default_area' => 'nullable|numeric|min:0',
+            'blocks.*.default_price' => 'nullable|numeric|min:0',
         ]);
 
         $validated['tenant_id'] = $request->user()->tenant_id;
@@ -137,8 +139,8 @@ class ProjectController extends Controller
                 for ($j = 1; $j <= (int) $blockData['lots']; $j++) {
                     $lotsToCreate[] = [
                         'lot_number' => (string) $j,
-                        'area' => 0,
-                        'price' => 0,
+                        'area' => $blockData['default_area'] ?? 0,
+                        'price' => $blockData['default_price'] ?? 0,
                         'status' => 'available',
                     ];
                 }

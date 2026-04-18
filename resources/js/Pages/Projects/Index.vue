@@ -31,12 +31,19 @@ watch(blocksCount, (newVal) => {
 
     if (count > currentLength) {
         for (let i = currentLength; i < count; i++) {
-            form.blocks.push({ name: `MZ${i + 1}`, lots: '' });
+            form.blocks.push({ name: `MZ${i + 1}`, lots: '', default_area: '', default_price: '' });
         }
     } else if (count < currentLength && count >= 0) {
         form.blocks.splice(count);
     }
 });
+
+const calculateBlockPrice = (index) => {
+    const block = form.blocks[index];
+    if (block.default_area && form.price_per_m2) {
+        block.default_price = block.default_area * form.price_per_m2;
+    }
+};
 
 const submit = () => {
     form.post(route('projects.store'), {
@@ -190,11 +197,29 @@ const submit = () => {
                             </div>
                             
                             <div v-if="form.blocks.length > 0" class="mt-4 p-4 border border-[#2a2a2a] rounded-xl bg-[#121212]">
-                                <h3 class="text-xs font-semibold text-white uppercase tracking-wider mb-3">Lotes por Manzana</h3>
-                                <div class="grid grid-cols-2 gap-4 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                    <div v-for="(block, index) in form.blocks" :key="index">
-                                        <label class="label-dark text-[10px] uppercase mb-1 tracking-wider">{{ block.name }}</label>
-                                        <input v-model="block.lots" type="number" class="input-dark bg-[#18181a] py-1.5" placeholder="Lotes" min="1" max="200" required />
+                                <h3 class="text-xs font-semibold text-white uppercase tracking-wider mb-3">Configuración de Manzanas</h3>
+                                <div class="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                    <div v-for="(block, index) in form.blocks" :key="index" class="p-3 border border-[#2a2a2a] rounded-lg bg-[#18181a]">
+                                        <h4 class="text-[11px] font-bold text-white uppercase tracking-wider mb-2">{{ block.name }}</h4>
+                                        <div class="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label class="block text-[9px] text-[#71717a] uppercase mb-1 font-bold">Nro. Lotes</label>
+                                                <input v-model="block.lots" type="number" class="w-full bg-[#121212] border border-[#2a2a2a] text-white text-xs rounded px-2 py-1.5 focus:border-[#52525b] focus:ring-0" placeholder="Ej: 10" required />
+                                            </div>
+                                            <div>
+                                                <label class="block text-[9px] text-[#71717a] uppercase mb-1 font-bold">Área (m²)</label>
+                                                <input v-model="block.default_area" type="number" step="0.01" class="w-full bg-[#121212] border border-[#2a2a2a] text-white text-xs rounded px-2 py-1.5 focus:border-[#52525b] focus:ring-0" placeholder="Ej: 120" />
+                                            </div>
+                                            <div class="flex items-end gap-1">
+                                                <div class="flex-1">
+                                                    <label class="block text-[9px] text-[#71717a] uppercase mb-1 font-bold">Precio (COP)</label>
+                                                    <input v-model="block.default_price" type="number" class="w-full bg-[#121212] border border-[#2a2a2a] text-white text-xs rounded px-2 py-1.5 focus:border-[#52525b] focus:ring-0" placeholder="0" />
+                                                </div>
+                                                <button type="button" @click="calculateBlockPrice(index)" class="bg-[#262626] text-[#ededed] hover:text-white px-2 py-1.5 rounded transition-colors" title="Auto-calcular precio según m²">
+                                                    <v-icon name="md-calculate-outlined" scale="0.9" />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
