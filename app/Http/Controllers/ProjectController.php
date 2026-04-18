@@ -112,6 +112,9 @@ class ProjectController extends Controller
             'total_area' => 'nullable|numeric|min:0',
             'price_per_m2' => 'nullable|numeric|min:0',
             'map_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'blocks' => 'nullable|array',
+            'blocks.*.name' => 'required|string',
+            'blocks.*.lots' => 'required|integer|min:1',
         ]);
 
         $validated['tenant_id'] = $request->user()->tenant_id;
@@ -121,7 +124,27 @@ class ProjectController extends Controller
             $validated['map_file'] = $request->file('map_file')->store('projects/maps', 'public');
         }
 
-        Project::create($validated);
+        $project = Project::create(collect($validated)->except(['blocks'])->toArray());
+
+        if (!empty($validated['blocks'])) {
+            foreach ($validated['blocks'] as $blockData) {
+                $block = $project->blocks()->create([
+                    'name' => $blockData['name'],
+                    'total_lots' => (int) $blockData['lots'],
+                ]);
+
+                $lotsToCreate = [];
+                for ($j = 1; $j <= (int) $blockData['lots']; $j++) {
+                    $lotsToCreate[] = [
+                        'lot_number' => (string) $j,
+                        'area' => 0,
+                        'price' => 0,
+                        'status' => 'available',
+                    ];
+                }
+                $block->lots()->createMany($lotsToCreate);
+            }
+        }
 
         return redirect()->route('projects.index')->with('success', 'Proyecto creado exitosamente.');
     }

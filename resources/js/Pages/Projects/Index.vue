@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const page = usePage();
 const isAdmin = computed(() => ['admin', 'accountant'].includes(page.props.auth.user.role));
@@ -11,6 +11,8 @@ const props = defineProps({
 });
 
 const showCreateModal = ref(false);
+const blocksCount = ref('');
+
 const form = useForm({
     name: '',
     description: '',
@@ -20,6 +22,20 @@ const form = useForm({
     total_area: '',
     price_per_m2: '',
     map_file: null,
+    blocks: [],
+});
+
+watch(blocksCount, (newVal) => {
+    const count = parseInt(newVal) || 0;
+    const currentLength = form.blocks.length;
+
+    if (count > currentLength) {
+        for (let i = currentLength; i < count; i++) {
+            form.blocks.push({ name: `MZ${i + 1}`, lots: '' });
+        }
+    } else if (count < currentLength && count >= 0) {
+        form.blocks.splice(count);
+    }
 });
 
 const submit = () => {
@@ -27,6 +43,7 @@ const submit = () => {
         onSuccess: () => {
             showCreateModal.value = false;
             form.reset();
+            blocksCount.value = '';
         },
     });
 };
@@ -165,7 +182,23 @@ const submit = () => {
                                     <input v-model="form.price_per_m2" type="number" class="input-dark bg-[#141414]" placeholder="0" />
                                 </div>
                             </div>
-                            <div>
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label class="label-dark">Cantidad de Manzanas</label>
+                                    <input v-model="blocksCount" type="number" class="input-dark bg-[#141414]" placeholder="Ej: 5" min="1" max="50" />
+                                </div>
+                            </div>
+                            
+                            <div v-if="form.blocks.length > 0" class="mt-4 p-4 border border-[#2a2a2a] rounded-xl bg-[#121212]">
+                                <h3 class="text-xs font-semibold text-white uppercase tracking-wider mb-3">Lotes por Manzana</h3>
+                                <div class="grid grid-cols-2 gap-4 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div v-for="(block, index) in form.blocks" :key="index">
+                                        <label class="label-dark text-[10px] uppercase mb-1 tracking-wider">{{ block.name }}</label>
+                                        <input v-model="block.lots" type="number" class="input-dark bg-[#18181a] py-1.5" placeholder="Lotes" min="1" max="200" required />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pt-2">
                                 <label class="label-dark flex items-center gap-1">
                                     <v-icon name="md-map-outlined" scale="0.8" /> Plano / Mapa del Proyecto
                                 </label>
