@@ -125,23 +125,23 @@ const getFilteredLots = (lots) => {
                 <!-- Stats minimalist layout -->
                 <div class="grid grid-cols-5 gap-6 bg-[#141414] border border-[#2a2a2a] p-4 rounded-xl">
                     <div class="text-center">
-                        <p class="text-xl font-semibold text-white">{{ project.total_lots }}</p>
+                        <p class="text-xl font-semibold text-white">{{ project.total_lots.toLocaleString() }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Total</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-xl font-semibold text-white">{{ project.available_lots }}</p>
+                        <p class="text-xl font-semibold text-white">{{ project.available_lots.toLocaleString() }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Disponibles</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-xl font-semibold text-amber-500">{{ project.pending_approval_lots }}</p>
+                        <p class="text-xl font-semibold text-amber-500">{{ project.pending_approval_lots.toLocaleString() }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Pendientes</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-xl font-semibold text-blue-500">{{ project.reserved_lots }}</p>
+                        <p class="text-xl font-semibold text-blue-500">{{ project.reserved_lots.toLocaleString() }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Reservados</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-xl font-semibold text-red-500">{{ project.sold_lots }}</p>
+                        <p class="text-xl font-semibold text-red-500">{{ project.sold_lots.toLocaleString() }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-1 tracking-wider">Vendidos</p>
                     </div>
                 </div>

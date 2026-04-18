@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
+import CurrencyInput from '@/Components/CurrencyInput.vue';
 
 const page = usePage();
 const isAdmin = computed(() => ['admin', 'accountant'].includes(page.props.auth.user.role));
@@ -118,22 +119,22 @@ const submit = () => {
                 <!-- Stats -->
                 <div class="grid grid-cols-3 gap-2 mb-4">
                     <div class="text-center p-2 rounded-lg bg-[#141414] border border-[#2a2a2a]">
-                        <p class="text-sm font-bold text-white">{{ project.available_lots }}</p>
+                        <p class="text-sm font-bold text-white">{{ project.available_lots.toLocaleString() }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-0.5 tracking-wider">Disp.</p>
                     </div>
                     <div class="text-center p-2 rounded-lg bg-[#141414] border border-[#2a2a2a]">
-                        <p class="text-sm font-bold text-[#a1a1aa]">{{ project.reserved_lots }}</p>
+                        <p class="text-sm font-bold text-[#a1a1aa]">{{ project.reserved_lots.toLocaleString() }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-0.5 tracking-wider">Reser.</p>
                     </div>
                     <div class="text-center p-2 rounded-lg bg-[#141414] border border-[#2a2a2a]">
-                        <p class="text-sm font-bold text-[#a1a1aa]">{{ project.sold_lots }}</p>
+                        <p class="text-sm font-bold text-[#a1a1aa]">{{ project.sold_lots.toLocaleString() }}</p>
                         <p class="text-[9px] text-[#71717a] uppercase mt-0.5 tracking-wider">Vend.</p>
                     </div>
                 </div>
 
                 <!-- Info -->
                 <div class="flex items-center justify-between text-[10px] text-[#71717a] bg-[#1e1e1e] px-3 py-2 rounded-lg border border-[#2a2a2a]">
-                    <span>{{ project.blocks_count }} mz • {{ project.lots_count }} lotes</span>
+                    <span>{{ project.blocks_count.toLocaleString() }} mz • {{ project.lots_count.toLocaleString() }} lotes</span>
                     <span v-if="project.total_area">{{ project.total_area.toLocaleString() }} m²</span>
                 </div>
             </Link>
@@ -151,7 +152,7 @@ const submit = () => {
             >
                 <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-[#000000] opacity-80 backdrop-blur-sm" @click="showCreateModal = false"></div>
-                    <div class="relative w-full max-w-lg bg-[#18181a] border border-[#2a2a2a] rounded-2xl p-8 animate-slide-up shadow-2xl">
+                    <div class="relative w-full max-w-2xl bg-[#18181a] border border-[#2a2a2a] rounded-2xl p-8 animate-slide-up shadow-2xl">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-lg font-semibold text-white tracking-tight">Nuevo Proyecto</h2>
                             <button @click="showCreateModal = false" class="text-[#71717a] hover:text-white">
@@ -182,11 +183,11 @@ const submit = () => {
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="label-dark">M² Totales</label>
-                                    <input v-model="form.total_area" type="number" class="input-dark bg-[#141414]" placeholder="0" />
+                                    <CurrencyInput v-model="form.total_area" placeholder="0" />
                                 </div>
                                 <div>
                                     <label class="label-dark">Precio base m²</label>
-                                    <input v-model="form.price_per_m2" type="number" class="input-dark bg-[#141414]" placeholder="0" />
+                                    <CurrencyInput v-model="form.price_per_m2" prefix="$" placeholder="0" />
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 gap-4">
@@ -208,14 +209,14 @@ const submit = () => {
                                             </div>
                                             <div>
                                                 <label class="block text-[9px] text-[#71717a] uppercase mb-1 font-bold">Área (m²)</label>
-                                                <input v-model="block.default_area" type="number" step="0.01" class="w-full bg-[#121212] border border-[#2a2a2a] text-white text-xs rounded px-2 py-1.5 focus:border-[#52525b] focus:ring-0" placeholder="Ej: 120" />
+                                                <CurrencyInput v-model="block.default_area" className="py-1.5 px-2 text-xs" placeholder="Ej: 120" />
                                             </div>
                                             <div class="flex items-end gap-1">
                                                 <div class="flex-1">
                                                     <label class="block text-[9px] text-[#71717a] uppercase mb-1 font-bold">Precio (COP)</label>
-                                                    <input v-model="block.default_price" type="number" class="w-full bg-[#121212] border border-[#2a2a2a] text-white text-xs rounded px-2 py-1.5 focus:border-[#52525b] focus:ring-0" placeholder="0" />
+                                                    <CurrencyInput v-model="block.default_price" prefix="$" className="py-1.5 px-2 text-xs" placeholder="0" />
                                                 </div>
-                                                <button type="button" @click="calculateBlockPrice(index)" class="bg-[#262626] text-[#ededed] hover:text-white px-2 py-1.5 rounded transition-colors" title="Auto-calcular precio según m²">
+                                                <button type="button" @click="calculateBlockPrice(index)" class="bg-[#262626] text-[#ededed] hover:text-white px-2 py-2 rounded transition-colors mb-[1px]" title="Auto-calcular precio según m²">
                                                     <v-icon name="md-calculate-outlined" scale="0.9" />
                                                 </button>
                                             </div>

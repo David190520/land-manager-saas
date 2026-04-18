@@ -5,6 +5,7 @@ import { ref, computed, watch } from 'vue';
 import Modal from '@/Components/Modal.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import CreateClientModal from '@/Pages/Clients/Partials/CreateClientModal.vue';
+import CurrencyInput from '@/Components/CurrencyInput.vue';
 
 const props = defineProps({
     lot: Object,
@@ -207,7 +208,7 @@ const getStatusTextClasses = (status) => {
                     <div>
                         <label class="label-dark">Área Total M²</label>
                         <div class="flex gap-2">
-                            <input v-model="lotForm.area" type="number" step="0.01" class="input-dark bg-[#121212] flex-1" placeholder="Ej: 200" />
+                            <CurrencyInput v-model="lotForm.area" @input="calculatePrice" placeholder="Ej: 200" />
                             <button type="button" @click="calculatePrice" class="btn-secondary px-3" title="Calcular Precio" v-if="props.lot.project.price_per_m2">
                                 <v-icon name="md-calculate-outlined" scale="1.2" />
                             </button>
@@ -217,7 +218,7 @@ const getStatusTextClasses = (status) => {
 
                     <div>
                         <label class="label-dark">Precio Base (COP)</label>
-                        <input v-model="lotForm.price" type="number" class="input-dark bg-[#121212]" placeholder="Valor total" required />
+                        <CurrencyInput v-model="lotForm.price" prefix="$" placeholder="Valor total" />
                     </div>
                     
                     <div>
@@ -424,7 +425,7 @@ const getStatusTextClasses = (status) => {
                         <div class="grid grid-cols-2 gap-6 pt-4 border-t border-[#2a2a2a]">
                             <div>
                                 <label class="label-dark">Enganche Pactado (COP)</label>
-                                <input v-model="form.down_payment" type="number" class="input-dark bg-[#121212]" placeholder="0" />
+                                <CurrencyInput v-model="form.down_payment" prefix="$" placeholder="0" />
                                 <p v-if="form.errors.down_payment" class="text-red-400 text-xs mt-1">{{ form.errors.down_payment }}</p>
                             </div>
                             <div>
