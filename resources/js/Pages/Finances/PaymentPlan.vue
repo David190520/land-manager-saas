@@ -1,7 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 const props = defineProps({
     plan: Object,
@@ -11,7 +12,20 @@ const props = defineProps({
     amortizationTable: Array,
 });
 
+const page = usePage();
+const isAdmin = computed(() => ['admin', 'accountant'].includes(page.props.auth.user.role));
+
 const payingPayment = ref(null);
+const showCancelModal = ref(false);
+const cancelForm = useForm({});
+
+const cancelPlan = () => {
+    cancelForm.post(route('finances.plan.cancel', props.plan.id), {
+        onSuccess: () => {
+            showCancelModal.value = false;
+        }
+    });
+};
 
 const paymentForm = useForm({
     payment_method: 'cash',
@@ -41,16 +55,16 @@ const formatCurrency = (value) => {
     }).format(value);
 };
 
-const getStatusClasses = (status, isInitial = false) => {
-    if (status === 'overdue') {
+const getStatusClasses = (row, isInitial = false) => {
+    if (row.is_overdue) {
         return isInitial 
-            ? 'bg-amber-500/20 text-amber-500 border-amber-500/30'
-            : 'bg-rose-500/20 text-rose-500 border-rose-500/30';
+            ? 'bg-amber-500/20 text-amber-500 border-amber-500/30 font-black animate-pulse'
+            : 'bg-rose-500/20 text-rose-500 border-rose-500/30 font-black animate-pulse';
     }
     return {
         'pending': 'bg-[#18181a] text-[#ededed] border-[#3f3f46]',
         'paid': 'bg-white text-black border-white',
-    }[status] || 'bg-[#18181a] text-[#a1a1aa] border-[#2a2a2a]';
+    }[row.status] || 'bg-[#18181a] text-[#a1a1aa] border-[#2a2a2a]';
 };
 </script>
 
@@ -72,16 +86,23 @@ const getStatusClasses = (status, isInitial = false) => {
                     Operación libre de intereses. Cuotas fijas mensuales.
                 </p>
             </div>
-            <div class="bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-2 flex items-center gap-4 text-xs font-semibold uppercase tracking-widest text-[#71717a]">
-                <span>Status de Plan:</span>
-                <span :class="[
-                    'px-2 py-0.5 rounded border',
-                    plan.status === 'active' ? 'bg-white text-black border-white' :
-                    plan.status === 'completed' ? 'bg-[#262626] text-[#ededed] border-[#4b5563]' :
-                    'bg-[#121212] text-[#71717a] border-[#2a2a2a]'
-                ]">
-                    {{ plan.status === 'active' ? 'En Curso' : plan.status === 'completed' ? 'Ejecutado' : 'Invalidado' }}
-                </span>
+            <div class="flex items-center gap-3">
+                <button v-if="isAdmin && plan.status === 'active'" @click="showCancelModal = true" class="bg-rose-500/10 text-rose-500 border border-rose-500/30 hover:bg-rose-500 hover:text-white px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
+                    <v-icon name="md-cancel-outlined" scale="0.8" />
+                    Invalidar Contrato
+                </button>
+                <div class="bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-2 flex items-center gap-4 text-xs font-semibold uppercase tracking-widest text-[#71717a]">
+                    <span>Status de Plan:</span>
+                    <span :class="[
+                        'px-2 py-0.5 rounded border',
+                        plan.reservation_status === 'pending_approval' ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' :
+                        plan.status === 'active' ? 'bg-white text-black border-white' :
+                        plan.status === 'completed' ? 'bg-[#262626] text-[#ededed] border-[#4b5563]' :
+                        'bg-[#121212] text-[#71717a] border-[#2a2a2a]'
+                    ]">
+                        {{ plan.reservation_status === 'pending_approval' ? 'Pdte. Aprobación' : plan.status === 'active' ? 'En Curso' : plan.status === 'completed' ? 'Ejecutado' : 'Invalidado' }}
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -168,14 +189,17 @@ const getStatusClasses = (status, isInitial = false) => {
                         </tr>
                     </thead>
                     <tbody class="text-xs">
-                        <tr v-for="row in amortizationTable" :key="row.installment" class="border-[#2a2a2a] hover:bg-[#1e1e1e]">
+                        <tr v-for="row in amortizationTable" :key="row.installment" 
+                            class="border-[#2a2a2a] transition-colors"
+                            :class="row.is_overdue ? 'bg-[#2a1313] hover:bg-[#3d1a1a]' : 'hover:bg-[#1e1e1e]'"
+                        >
                             <td class="font-bold text-white"># {{ String(row.installment).padStart(3, '0') }}</td>
-                            <td class="font-medium text-[#a1a1aa]">{{ row.due_date }}</td>
+                            <td class="font-medium" :class="row.is_overdue ? 'text-rose-400 font-bold' : 'text-[#a1a1aa]'">{{ row.due_date }}</td>
                             <td class="font-semibold text-white tracking-wide">{{ formatCurrency(row.amount) }}</td>
                             <td class="text-[#71717a]">{{ formatCurrency(row.balance) }}</td>
                             <td class="text-[#a1a1aa] italic font-medium opacity-80 mt-[2px] inline-block">{{ row.paid_date || 'En descubierto' }}</td>
                             <td>
-                                <span :class="['inline-block border px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest', getStatusClasses(row.status, row.installment === 1)]">
+                                <span :class="['inline-block border px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest', getStatusClasses(row, row.installment === 1)]">
                                     {{ row.status_label }}
                                 </span>
                             </td>
@@ -184,7 +208,10 @@ const getStatusClasses = (status, isInitial = false) => {
                                     <button
                                         v-if="row.status !== 'paid'"
                                         @click="openPaymentModal(row)"
-                                        class="text-[10px] text-white hover:text-[#a1a1aa] uppercase font-bold tracking-widest transition-colors flex items-center gap-1 bg-[#262626] border border-[#3f3f46] px-3 py-1.5 rounded"
+                                        :disabled="plan.reservation_status === 'pending_approval'"
+                                        :class="plan.reservation_status === 'pending_approval' ? 'opacity-30 cursor-not-allowed border-[#2a2a2a] text-[#71717a]' : 'text-white hover:text-[#a1a1aa] border-[#3f3f46]'"
+                                        :title="plan.reservation_status === 'pending_approval' ? 'Aprobación de reserva requerida para pagos' : 'Aportar Cuota'"
+                                        class="text-[10px] uppercase font-bold tracking-widest transition-colors flex items-center gap-1 bg-[#262626] border px-3 py-1.5 rounded"
                                     >
                                         <v-icon name="md-add" scale="0.7"/> Aportar
                                     </button>
@@ -225,17 +252,17 @@ const getStatusClasses = (status, isInitial = false) => {
 
                         <form @submit.prevent="submitPayment" class="space-y-4">
                             <div>
-                                <label class="label-dark text-[10px] uppercase font-bold tracking-wider">Vía de Ingreso *</label>
+                                <label class="label-dark text-[10px] uppercase font-bold tracking-wider">Forma de pago *</label>
                                 <select v-model="paymentForm.payment_method" class="input-dark bg-[#121212] h-11">
                                     <option value="cash">Efectivo Físico</option>
-                                    <option value="transfer">Transferencia Bancaria</option>
-                                    <option value="check">Cheque Cruzado</option>
-                                    <option value="other">Compensación Alterna</option>
+                                    <option value="transfer">Transferencia</option>
+                                    <option value="check">Cheque</option>
+                                    <option value="other">Otro (especificar en las anotaciones)</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="label-dark text-[10px] uppercase font-bold tracking-wider">Número de Referencia Interna</label>
-                                <input v-model="paymentForm.reference_number" type="text" class="input-dark bg-[#121212] h-11" placeholder="Voucher o Cód. Transacción" />
+                                <input v-model="paymentForm.reference_number" type="text" class="input-dark bg-[#121212] h-11" placeholder="Código de Transacción" />
                             </div>
                             <div>
                                 <label class="label-dark text-[10px] uppercase font-bold tracking-wider">Anotaciones Contables</label>
@@ -258,5 +285,17 @@ const getStatusClasses = (status, isInitial = false) => {
                 </div>
             </Transition>
         </Teleport>
+
+        <ConfirmModal
+            :show="showCancelModal"
+            title="¿Invalidar Contrato?"
+            message="Esta acción es irreversible. Se cancelará el plan de pagos, se anulará la reserva y el lote volverá a estar DISPONIBLE para la venta."
+            confirm-text="Sí, Invalidar"
+            cancel-text="Cancelar"
+            type="danger"
+            @close="showCancelModal = false"
+            @confirm="cancelPlan"
+            :processing="cancelForm.processing"
+        />
     </AppLayout>
 </template>

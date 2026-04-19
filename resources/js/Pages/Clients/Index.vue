@@ -36,7 +36,7 @@ const openCreateModal = () => {
         <div class="flex items-center justify-between mb-8 animate-fade-in">
             <div>
                 <h1 class="text-2xl font-semibold text-white tracking-tight">Directorio de Clientes</h1>
-                <p class="text-xs text-[#71717a] mt-1 font-medium tracking-wide">Padrón oficial</p>
+                <p class="text-xs text-[#71717a] mt-1 font-medium tracking-wide">Registro oficial</p>
             </div>
             <button @click="openCreateModal" class="btn-primary">
                 <v-icon name="md-add" fill="black" class="mr-2" />
@@ -54,7 +54,7 @@ const openCreateModal = () => {
                     v-model="search"
                     type="text"
                     class="input-dark pl-12 bg-[#18181a] border-[#2a2a2a] text-sm h-11 transition-colors hover:border-[#3f3f46] focus:border-white focus:ring-0"
-                    placeholder="Filtrar DNI o Nombre..."
+                    placeholder="Filtrar número de documento o nombre..."
                 />
             </div>
         </div>

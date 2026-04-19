@@ -50,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Finances (admin/accountant only)
     Route::get('/finances', [FinanceController::class, 'index'])->name('finances.index');
     Route::get('/finances/plans/{paymentPlan}', [FinanceController::class, 'showPlan'])->name('finances.plan');
+    Route::post('/finances/plans/{paymentPlan}/cancel', [FinanceController::class, 'cancelPlan'])->name('finances.plan.cancel');
     Route::post('/finances/payments/{payment}/record', [FinanceController::class, 'recordPayment'])->name('finances.payment.record');
     Route::get('/finances/payments/{payment}/receipt', [FinanceController::class, 'generateReceipt'])->name('finances.payment.receipt');
 

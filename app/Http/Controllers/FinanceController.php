@@ -15,12 +15,43 @@ class FinanceController extends Controller
     {
         $tenantId = $request->user()->tenant_id;
 
-        $plans = PaymentPlan::with(['reservation.client', 'reservation.lot.block.project'])
+        $query = PaymentPlan::with(['reservation.client', 'reservation.lot.block.project'])
             ->whereHas('reservation.lot.block.project', function ($q) use ($tenantId) {
                 $q->where('tenant_id', $tenantId);
-            })
-            ->latest()
-            ->paginate(15)
+            });
+
+        // Search filter
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $searchTerm = '%' . $request->search . '%';
+                $q->whereHas('reservation.client', function ($q) use ($searchTerm) {
+                    $q->where(\Illuminate\Support\Facades\DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', $searchTerm)
+                        ->orWhere('document_number', 'like', $searchTerm)
+                        ->orWhere('phone', 'like', $searchTerm);
+                })->orWhereHas('reservation.lot', function ($q) use ($searchTerm) {
+                    $q->where('lot_number', 'like', $searchTerm);
+                });
+            });
+        }
+
+        // Status filter
+        if ($request->status) {
+            if ($request->status === 'overdue') {
+                $query->whereHas('payments', function ($q) {
+                    $q->where('status', 'pending')
+                        ->where('due_date', '<', now()->startOfDay());
+                });
+            } elseif ($request->status === 'pending_approval') {
+                $query->whereHas('reservation', function ($q) {
+                    $q->where('status', 'pending_approval');
+                });
+            } else {
+                $query->where('status', $request->status);
+            }
+        }
+
+        $plans = $query->paginate(15)
+            ->withQueryString()
             ->through(function ($plan) {
                 return [
                     'id' => $plan->id,
@@ -36,9 +67,24 @@ class FinanceController extends Controller
                     'remaining_balance' => $plan->remaining_balance,
                     'progress' => $plan->progress_percentage,
                     'status' => $plan->status,
+                    'reservation_status' => $plan->reservation->status,
                     'start_date' => $plan->start_date->format('Y-m-d'),
+                    'created_at' => $plan->created_at->format('Y-m-d'),
+                    'is_overdue' => $plan->payments()
+                        ->where('status', 'pending')
+                        ->where('due_date', '<', now()->startOfDay())
+                        ->exists(),
                 ];
-            });
+            })
+            ->toArray();
+
+        // Sort: overdue first, then by date
+        usort($plans['data'], function ($a, $b) {
+            if ($a['is_overdue'] === $b['is_overdue']) {
+                return $b['created_at'] <=> $a['created_at'];
+            }
+            return $b['is_overdue'] <=> $a['is_overdue'];
+        });
 
         // Summary stats
         $totalFinanced = PaymentPlan::whereHas('reservation.lot.block.project', function ($q) use ($tenantId) {
@@ -55,6 +101,7 @@ class FinanceController extends Controller
 
         return Inertia::render('Finances/Index', [
             'plans' => $plans,
+            'filters' => $request->only(['search', 'status']),
             'summary' => [
                 'totalFinanced' => (float) $totalFinanced,
                 'totalCollected' => (float) $totalCollected,
@@ -88,6 +135,7 @@ class FinanceController extends Controller
                 'progress' => $paymentPlan->progress_percentage,
                 'start_date' => $paymentPlan->start_date->format('Y-m-d'),
                 'status' => $paymentPlan->status,
+                'reservation_status' => $paymentPlan->reservation->status,
             ],
             'client' => [
                 'id' => $paymentPlan->reservation->client->id,
@@ -113,6 +161,10 @@ class FinanceController extends Controller
         $tenantId = $request->user()->tenant_id;
         if ($payment->paymentPlan->reservation->lot->block->project->tenant_id !== $tenantId) {
             abort(403);
+        }
+
+        if ($payment->paymentPlan->reservation->status === 'pending_approval') {
+            return redirect()->back()->withErrors(['payment' => 'No se pueden recibir pagos porque la reserva principal aún no ha sido aprobada.']);
         }
 
         if ($payment->status === 'paid') {
@@ -151,6 +203,35 @@ class FinanceController extends Controller
         }
 
         return redirect()->back()->with('success', 'Pago registrado exitosamente.');
+    }
+
+    public function cancelPlan(Request $request, PaymentPlan $paymentPlan)
+    {
+        $tenantId = $request->user()->tenant_id;
+        
+        if ($paymentPlan->reservation->lot->block->project->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        if (!in_array($request->user()->role, ['admin', 'accountant'])) {
+            abort(403, 'Acción no autorizada.');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($paymentPlan) {
+            // Delete pending installments instead of updating due to db constraints
+            $paymentPlan->payments()->where('status', 'pending')->delete();
+            
+            // Invalidate the plan (status defined in migration is 'cancelled')
+            $paymentPlan->update(['status' => 'cancelled']);
+            
+            // Cancel the reservation
+            $paymentPlan->reservation->update(['status' => 'cancelled']);
+            
+            // Re-release the lot
+            $paymentPlan->reservation->lot->update(['status' => 'available']);
+        });
+
+        return redirect()->route('finances.index')->with('success', 'Contrato invalidado. El lote está disponible nuevamente.');
     }
 
     public function generateReceipt(Payment $payment)

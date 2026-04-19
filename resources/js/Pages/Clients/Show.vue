@@ -53,7 +53,7 @@ const formatCurrency = (value) => {
 
         <!-- Breadcrumb -->
         <div class="flex items-center gap-2 text-xs text-[#71717a] mb-8 animate-fade-in font-medium">
-            <Link :href="route('clients.index')" class="hover:text-white transition-colors">Padrón</Link>
+            <Link :href="route('clients.index')" class="hover:text-white transition-colors">Clientes</Link>
             <v-icon name="md-keyboardarrowright" scale="0.8" />
             <span class="text-[#ededed]">{{ client.full_name }}</span>
         </div>
@@ -139,11 +139,13 @@ const formatCurrency = (value) => {
                             </div>
                             <span :class="[
                                 'px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wider border',
-                                res.status === 'active' ? 'bg-[#262626] text-white border-[#3f3f46]' :
-                                res.status === 'completed' ? 'bg-[#18181a] text-[#ededed] border-white' :
+                                res.is_overdue ? 'bg-red-500/20 text-red-500 border-red-500/30 animate-pulse' :
+                                res.status === 'pending_approval' ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' :
+                                res.status === 'active' || res.status === 'confirmed' ? 'bg-white text-black border-white' :
+                                res.status === 'completed' ? 'bg-[#132a13] text-[#4ade80] border-[#4ade80]/30' :
                                 'bg-[#0a0a0a] text-[#71717a] border-[#1e1e1e]'
                             ]">
-                                {{ res.status_label }}
+                                {{ res.is_overdue ? 'En Mora' : res.status_label }}
                             </span>
                         </div>
                         <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-0 text-xs">

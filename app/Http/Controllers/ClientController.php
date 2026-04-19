@@ -109,6 +109,10 @@ class ClientController extends Controller
                 'payment_deadline' => $r->payment_deadline ? $r->payment_deadline->format('Y-m-d') : null,
                 'status' => $r->status,
                 'status_label' => $r->status_label,
+                'is_overdue' => $r->paymentPlan ? $r->paymentPlan->payments()
+                    ->where('status', 'pending')
+                    ->where('due_date', '<', now()->startOfDay())
+                    ->exists() : false,
                 'created_at' => $r->created_at->format('Y-m-d'),
                 'payment_plan' => $r->paymentPlan ? [
                     'id' => $r->paymentPlan->id,

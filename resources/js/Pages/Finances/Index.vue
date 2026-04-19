@@ -1,10 +1,31 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import { debounce } from 'lodash';
 
 const props = defineProps({
     plans: Object,
     summary: Object,
+    filters: Object,
+});
+
+const search = ref(props.filters?.search || '');
+const status = ref(props.filters?.status || '');
+
+const handleSearch = debounce(() => {
+    router.get(route('finances.index'), { 
+        search: search.value, 
+        status: status.value 
+    }, { 
+        preserveState: true, 
+        preserveScroll: true, 
+        replace: true 
+    });
+}, 300);
+
+watch([search, status], () => {
+    handleSearch();
 });
 
 const formatCurrency = (value) => {
@@ -21,10 +42,33 @@ const formatCurrency = (value) => {
         <Head title="Contabilidad" />
 
         <!-- Header -->
-        <div class="mb-8 animate-fade-in flex items-center justify-between">
+        <div class="mb-8 animate-fade-in flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-semibold text-white tracking-tight">Finanzas y Recaudos</h1>
                 <p class="text-xs text-[#71717a] mt-1 font-medium tracking-wide">Amortización de inmuebles comerciales</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="relative min-w-[280px]">
+                    <v-icon name="md-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717a]" scale="0.9" />
+                    <input 
+                        v-model="search" 
+                        type="text" 
+                        placeholder="Buscar por nombre, identificación o lote..." 
+                        class="bg-[#18181a] border border-[#2a2a2a] text-white text-xs rounded-xl pl-9 pr-4 py-2.5 w-full focus:ring-0 focus:border-[#3f3f46] transition-all"
+                    />
+                </div>
+                <select 
+                    v-model="status" 
+                    class="bg-[#18181a] border border-[#2a2a2a] text-white text-xs rounded-xl px-4 py-2.5 focus:ring-0 focus:border-[#3f3f46] transition-all min-w-[150px]"
+                >
+                    <option value="">Todos los Estados</option>
+                    <option value="overdue">En Mora</option>
+                    <option value="pending_approval">Pdte. Aprobación</option>
+                    <option value="active">Vigentes</option>
+                    <option value="completed">Saldados</option>
+                    <option value="cancelled">Cancelados</option>
+                </select>
             </div>
         </div>
 
@@ -70,6 +114,7 @@ const formatCurrency = (value) => {
             <table class="table-dark">
                 <thead>
                     <tr>
+                        <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Fecha Contrato</th>
                         <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Titular del Contrato</th>
                         <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Activo Fijo</th>
                         <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Desarrollo</th>
@@ -83,40 +128,55 @@ const formatCurrency = (value) => {
                 </thead>
                 <tbody class="text-xs">
                     <tr v-if="plans.data.length === 0">
-                        <td colspan="9" class="text-center py-16 text-[#71717a] bg-[#121212] border-t border-[#2a2a2a]">
+                        <td colspan="10" class="text-center py-16 text-[#71717a] bg-[#121212] border-t border-[#2a2a2a]">
                             <v-icon name="md-cancel-outlined" scale="2" fill="#3f3f46" class="mx-auto block mb-3" />
                             No existen planes de pago estructurados en el momento.
                         </td>
                     </tr>
-                    <tr v-for="plan in plans.data" :key="plan.id" class="border-[#2a2a2a] hover:bg-[#1e1e1e]">
-                        <td class="font-semibold text-white tracking-wide py-4">{{ plan.client_name }}</td>
+                    <tr v-for="plan in plans.data" :key="plan.id" 
+                        class="border-[#2a2a2a] transition-colors"
+                        :class="[
+                            plan.is_overdue ? 'bg-[#2a1313] hover:bg-[#3d1a1a]' : 
+                            plan.status === 'completed' ? 'bg-[#132a13] hover:bg-[#1a3d1a]' :
+                            plan.status === 'cancelled' ? 'bg-[#1a1a1a] opacity-60 hover:opacity-100 hover:bg-[#222222]' :
+                            'hover:bg-[#1e1e1e]'
+                        ]"
+                    >
+                        <td class="text-[#71717a] font-medium py-4">{{ plan.created_at }}</td>
+                        <td class="font-semibold text-white tracking-wide">{{ plan.client_name }}</td>
                         <td class="text-[#a1a1aa] font-medium">L-{{ plan.lot }}</td>
                         <td class="text-[#71717a] tracking-wide">{{ plan.project }}</td>
                         <td class="text-white font-semibold">{{ formatCurrency(plan.total_price) }}</td>
                         <td class="text-[#a1a1aa]">{{ formatCurrency(plan.down_payment) }}</td>
                         <td class="text-white border-x border-[#2a2a2a] bg-[#141414] px-4 font-bold tracking-tight">{{ formatCurrency(plan.financed_amount) }}</td>
                         <td class="min-w-[140px]">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-[10px] text-white font-bold">{{ plan.progress }}%</span>
-                                <span class="text-[9px] text-[#71717a]">{{ plan.paid_installments }}/{{ plan.total_installments }}</span>
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-white font-bold">{{ plan.progress }}%</span>
+                                    <span class="text-[9px] text-[#71717a]">{{ plan.paid_installments }}/{{ plan.total_installments }}</span>
+                                </div>
+                                <span v-if="plan.is_overdue" class="text-[8px] font-black bg-red-500 text-white px-1 rounded animate-pulse uppercase tracking-tighter">
+                                    En Mora
+                                </span>
                             </div>
                             <div class="w-full h-[3px] bg-[#262626] rounded-full overflow-hidden">
-                                <div class="h-full bg-white transition-all" :style="{ width: `${plan.progress}%` }"></div>
+                                <div class="h-full bg-white transition-all" :style="{ width: `${plan.progress}%`, backgroundColor: plan.status === 'completed' ? '#4ade80' : 'white' }"></div>
                             </div>
                         </td>
                         <td class="text-center">
                             <span :class="[
                                 'inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border',
+                                plan.reservation_status === 'pending_approval' ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' :
                                 plan.status === 'active' ? 'bg-white text-black border-white' :
-                                plan.status === 'completed' ? 'bg-[#262626] text-[#ededed] border-[#3f3f46]' :
+                                plan.status === 'completed' ? 'bg-[#132a13] text-[#4ade80] border-[#4ade80]/30' :
                                 'bg-[#121212] text-[#71717a] border-[#2a2a2a]'
                             ]">
-                                {{ plan.status === 'active' ? 'Vigente' : plan.status === 'completed' ? 'Saldado' : 'Fallido' }}
+                                {{ plan.reservation_status === 'pending_approval' ? 'Pdte. Aprob.' : plan.status === 'active' ? 'Vigente' : plan.status === 'completed' ? 'Saldado' : 'Cancelado' }}
                             </span>
                         </td>
                         <td class="text-right pr-4">
                             <Link :href="route('finances.plan', plan.id)" class="text-[10px] font-bold uppercase tracking-widest text-[#71717a] hover:text-white transition-colors">
-                                Desglosar
+                                Ver detalle
                             </Link>
                         </td>
                     </tr>

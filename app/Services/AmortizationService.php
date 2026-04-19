@@ -64,6 +64,7 @@ class AmortizationService
         $table = [];
 
         foreach ($payments as $payment) {
+            $isOverdue = $payment->status === 'pending' && $payment->due_date->lt(now()->startOfDay());
             $balance -= $payment->amount;
 
             $table[] = [
@@ -72,7 +73,8 @@ class AmortizationService
                 'amount' => (float) $payment->amount,
                 'paid_date' => $payment->paid_date?->format('Y-m-d'),
                 'status' => $payment->status,
-                'status_label' => $payment->status_label,
+                'is_overdue' => $isOverdue,
+                'status_label' => $isOverdue ? 'Vencido' : $payment->status_label,
                 'balance' => round(max(0, $balance), 2),
                 'payment_id' => $payment->id,
             ];
