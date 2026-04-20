@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Document;
+use App\Models\InternalNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -82,6 +84,30 @@ class ClientController extends Controller
 
         $client = Client::create($validated);
 
+        // Fire info notification
+        InternalNotification::create([
+            'tenant_id' => $request->user()->tenant_id,
+            'user_id' => null,
+            'type' => 'new_client',
+            'urgency' => 'info',
+            'title' => 'Nuevo cliente registrado',
+            'message' => "{$client->full_name} fue registrado en el directorio",
+            'reference_type' => Client::class,
+            'reference_id' => $client->id,
+            'action_url' => "/clients/{$client->id}",
+        ]);
+
+        // Audit log
+        AuditLog::create([
+            'tenant_id' => $request->user()->tenant_id,
+            'user_id' => $request->user()->id,
+            'client_id' => $client->id,
+            'action_type' => 'created',
+            'entity_type' => Client::class,
+            'entity_id' => $client->id,
+            'description' => "{$client->full_name} registrado en el directorio",
+        ]);
+
         return redirect()->route('clients.show', $client)->with('success', 'Cliente creado exitosamente.');
     }
 
@@ -136,6 +162,24 @@ class ClientController extends Controller
             ];
         });
 
+        $auditLogs = AuditLog::where('client_id', $client->id)
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->limit(30)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'action_type' => $log->action_type,
+                    'description' => $log->description,
+                    'old_values' => $log->old_values,
+                    'new_values' => $log->new_values,
+                    'user_name' => $log->user?->name ?? 'Sistema',
+                    'created_at' => $log->created_at->format('Y-m-d H:i'),
+                    'created_at_human' => $log->created_at->diffForHumans(),
+                ];
+            });
+
         return Inertia::render('Clients/Show', [
             'client' => [
                 'id' => $client->id,
@@ -155,6 +199,7 @@ class ClientController extends Controller
             ],
             'reservations' => $reservations,
             'documents' => $documents,
+            'auditLogs' => $auditLogs,
         ]);
     }
 
@@ -177,7 +222,35 @@ class ClientController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $oldValues = $client->only(array_keys($validated));
         $client->update($validated);
+
+        // Find what actually changed
+        $changes = collect($validated)->filter(function ($value, $key) use ($oldValues) {
+            return $oldValues[$key] != $value;
+        });
+
+        if ($changes->isNotEmpty()) {
+            $fieldLabels = [
+                'first_name' => 'Nombre', 'last_name' => 'Apellido', 'document_type' => 'Tipo Doc.',
+                'document_number' => 'Nº Doc.', 'email' => 'Email', 'phone' => 'Teléfono',
+                'phone_secondary' => 'Tel. Secundario', 'address' => 'Dirección', 'city' => 'Ciudad',
+                'department' => 'Departamento', 'occupation' => 'Ocupación', 'notes' => 'Notas',
+            ];
+            $changedFields = $changes->keys()->map(fn($k) => $fieldLabels[$k] ?? $k)->implode(', ');
+
+            AuditLog::create([
+                'tenant_id' => $request->user()->tenant_id,
+                'user_id' => $request->user()->id,
+                'client_id' => $client->id,
+                'action_type' => 'updated',
+                'entity_type' => Client::class,
+                'entity_id' => $client->id,
+                'description' => "Datos del cliente actualizados: {$changedFields}",
+                'old_values' => $oldValues->only($changes->keys()->toArray()),
+                'new_values' => $changes->toArray(),
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Cliente actualizado exitosamente.');
     }

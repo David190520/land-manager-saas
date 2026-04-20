@@ -7,6 +7,7 @@ const props = defineProps({
     client: Object,
     reservations: Array,
     documents: Array,
+    auditLogs: Array,
 });
 
 const activeTab = ref('reservations');
@@ -123,6 +124,15 @@ const formatCurrency = (value) => {
                     >
                         Repositorio Base ({{ documents.length }})
                     </button>
+                    <button
+                        @click="activeTab = 'audit'"
+                        :class="[
+                            'pb-3 text-xs font-bold uppercase tracking-widest transition-colors',
+                            activeTab === 'audit' ? 'text-white border-b-2 border-white' : 'text-[#71717a] hover:text-[#a1a1aa]'
+                        ]"
+                    >
+                        Historial ({{ auditLogs?.length || 0 }})
+                    </button>
                 </div>
 
                 <!-- Tab: Reservations -->
@@ -229,7 +239,7 @@ const formatCurrency = (value) => {
 
                         <div class="flex justify-end pt-4 border-t border-[#2a2a2a]">
                             <button type="submit" class="btn-primary" :disabled="documentForm.processing">
-                                {{ documentForm.processing ? 'Subiendo...' : 'Consignar' }}
+                                {{ documentForm.processing ? 'Subiendo...' : 'Guardar' }}
                             </button>
                         </div>
                     </form>
@@ -277,7 +287,68 @@ const formatCurrency = (value) => {
                     </div>
                 </div>
 
+                </div>
+
+                <!-- Tab: Audit Logs -->
+                <div v-if="activeTab === 'audit'" class="animate-fade-in space-y-6">
+                    <div class="bg-[#18181a] border border-[#2a2a2a] rounded-2xl overflow-hidden relative">
+                        <!-- timeline line -->
+                        <div class="absolute left-10 top-0 bottom-0 w-px bg-[#2a2a2a] z-0 hidden sm:block"></div>
+                        
+                        <div class="px-6 py-4 border-b border-[#2a2a2a] relative z-10 bg-[#18181a]">
+                            <h3 class="text-[10px] font-bold text-white tracking-widest uppercase">Historial de Transacciones (Log)</h3>
+                        </div>
+
+                        <div class="p-6 relative z-10">
+                            <div v-if="auditLogs.length === 0" class="text-center py-12 text-xs text-[#71717a]">
+                                No se ha registrado actividad reciente.
+                            </div>
+                            
+                            <div v-else class="space-y-8">
+                                <div v-for="log in auditLogs" :key="log.id" class="flex gap-4 sm:gap-6 relative group">
+                                    <!-- Timeline Icon -->
+                                    <div class="hidden sm:flex w-8 h-8 rounded-full bg-[#1e1e1e] border-2 border-[#2a2a2a] items-center justify-center flex-shrink-0 z-10 group-hover:border-[#3f3f46] transition-colors relative mt-1">
+                                        <v-icon :name="log.action_type === 'created' ? 'md-add' : log.action_type === 'status_changed' ? 'md-warningamber-outlined' : log.action_type === 'payment_recorded' ? 'md-attachmoney-outlined' : 'md-edit-outlined'" scale="0.8" class="text-[#a1a1aa]" />
+                                    </div>
+                                    
+                                    <!-- Content -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-3 mb-1 flex-wrap">
+                                            <span class="text-[10px] sm:text-xs font-semibold text-[#ededed]">
+                                                {{ log.created_at.split(' ')[0] }}
+                                            </span>
+                                            <span class="text-[#3f3f46]">—</span>
+                                            <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest bg-[#262626] text-[#a1a1aa]">
+                                                {{ log.user_name }}
+                                            </span>
+                                            <span class="text-[9px] text-[#71717a] ml-auto">
+                                                {{ log.created_at.split(' ')[1] }}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 mt-2">
+                                            <p class="text-xs text-white leading-relaxed font-medium">
+                                                {{ log.description }}
+                                            </p>
+                                            
+                                            <div v-if="log.old_values && log.new_values && Object.keys(log.new_values).length > 0" class="mt-3 pt-3 border-t border-[#2a2a2a]/50 text-[10px] space-y-1.5">
+                                                <div v-for="(newValue, key) in log.new_values" :key="key" class="flex items-start gap-2">
+                                                    <span class="text-[#71717a] w-24 flex-shrink-0">{{ key }}:</span>
+                                                    <div class="flex flex-wrap items-center gap-2 flex-1 break-all">
+                                                        <span class="text-[#ef4444] line-through opacity-80">{{ log.old_values[key] ?? 'nulo' }}</span>
+                                                        <v-icon name="md-keyboardarrowright" scale="0.7" class="text-[#71717a] flex-shrink-0" />
+                                                        <span class="text-[#4ade80]">{{ newValue ?? 'nulo' }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-        </div>
     </AppLayout>
 </template>

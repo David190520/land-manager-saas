@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import Toast from '@/Components/Toast.vue';
+import NotificationCenter from '@/Components/NotificationCenter.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -119,6 +120,10 @@ const roleLabel = computed(() => {
 
         <!-- Main Content -->
         <main class="flex-1 lg:ml-64 min-h-screen relative">
+            <!-- Top Bar -->
+            <div class="sticky top-0 z-20 bg-[#121212]/80 backdrop-blur-xl border-b border-[#2a2a2a]/50 px-6 lg:px-10 py-3 flex items-center justify-end">
+                <NotificationCenter />
+            </div>
             <Toast />
             <div class="p-6 lg:p-10">
                 <slot />

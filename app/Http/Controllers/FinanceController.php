@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
+use App\Models\InternalNotification;
 use App\Models\Payment;
 use App\Models\PaymentPlan;
 use App\Services\AmortizationService;
@@ -172,7 +174,7 @@ class FinanceController extends Controller
         }
 
         $validated = $request->validate([
-            'payment_method' => 'required|in:cash,transfer,check',
+            'payment_method' => 'required|in:cash,transfer,check,other',
             'reference_number' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
         ]);
@@ -186,9 +188,20 @@ class FinanceController extends Controller
             'received_by' => $request->user()->id,
         ]);
 
-        // Check if this is the first payment - confirm reservation
         $plan = $payment->paymentPlan;
         $reservation = $plan->reservation;
+        $client = $reservation->client;
+        
+        // Log transaction
+        AuditLog::create([
+            'tenant_id' => $tenantId,
+            'user_id' => $request->user()->id,
+            'client_id' => $client->id,
+            'action_type' => 'payment_recorded',
+            'entity_type' => Payment::class,
+            'entity_id' => $payment->id,
+            'description' => "Cuota #{$payment->installment_number} marcada como ABONADA — Valor: $" . number_format((float)$payment->amount, 0, ',', '.'),
+        ]);
         if ($reservation->status === 'active' && $plan->payments()->where('status', 'paid')->count() === 1) {
             $reservation->update([
                 'status' => 'confirmed',
@@ -201,6 +214,20 @@ class FinanceController extends Controller
         if ($plan->payments()->where('status', '!=', 'paid')->count() === 0) {
             $plan->update(['status' => 'completed']);
         }
+
+        // Fire info notification
+        $client = $plan->reservation->client;
+        InternalNotification::create([
+            'tenant_id' => $tenantId,
+            'user_id' => null,
+            'type' => 'payment_recorded',
+            'urgency' => 'info',
+            'title' => 'Pago registrado exitosamente',
+            'message' => "Cuota #{$payment->installment_number} de {$client->full_name} fue consignada",
+            'reference_type' => Payment::class,
+            'reference_id' => $payment->id,
+            'action_url' => "/finances/plans/{$plan->id}",
+        ]);
 
         return redirect()->back()->with('success', 'Pago registrado exitosamente.');
     }
@@ -225,13 +252,30 @@ class FinanceController extends Controller
             $paymentPlan->update(['status' => 'cancelled']);
             
             // Cancel the reservation
-            $paymentPlan->reservation->update(['status' => 'cancelled']);
+            $paymentPlan->reservation->update([
+                'status' => 'cancelled' // Or however you track cancelled reservations locally
+            ]);
+
+            // Release the lot
+            $paymentPlan->reservation->lot->update([
+                'status' => 'available'
+            ]);
             
-            // Re-release the lot
-            $paymentPlan->reservation->lot->update(['status' => 'available']);
+            // Log transaction
+            AuditLog::create([
+                'tenant_id' => $paymentPlan->reservation->lot->block->project->tenant_id,
+                'user_id' => request()->user()->id,
+                'client_id' => $paymentPlan->reservation->client_id,
+                'action_type' => 'status_changed',
+                'entity_type' => PaymentPlan::class,
+                'entity_id' => $paymentPlan->id,
+                'description' => "Contrato invalidado: Estado cambió a CANCELADO — Lote liberado: {$paymentPlan->reservation->lot->full_identifier}",
+                'old_values' => ['status' => 'active'],
+                'new_values' => ['status' => 'cancelled'],
+            ]);
         });
 
-        return redirect()->route('finances.index')->with('success', 'Contrato invalidado. El lote está disponible nuevamente.');
+        return redirect()->back()->with('success', 'Contrato invalidado y lote liberado exitosamente.');
     }
 
     public function generateReceipt(Payment $payment)

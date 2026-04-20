@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Lot;
 use App\Models\Reservation;
 use App\Services\AmortizationService;
@@ -77,7 +78,17 @@ class ReservationController extends Controller
             ? 'Reserva creada y aprobada (Acceso Administrativo).'
             : 'Reserva creada y pendiente de aprobación.';
 
-        return redirect()->route('lots.show', $lot)->with('success', $message);
+        AuditLog::create([
+            'tenant_id' => $lot->block->project->tenant_id,
+            'user_id' => $request->user()->id,
+            'client_id' => $reservation->client_id,
+            'action_type' => 'created',
+            'entity_type' => Reservation::class,
+            'entity_id' => $reservation->id,
+            'description' => "Contrato estructurado para {$lot->full_identifier} | Enganche: $" . number_format((float)$validated['down_payment'], 0, ',', '.'),
+        ]);
+
+        return redirect()->route('projects.show', $lot->block->project_id)->with('success', $message);
     }
 
     public function cancel(Reservation $reservation)
@@ -106,6 +117,18 @@ class ReservationController extends Controller
             $reservation->paymentPlan->update(['status' => 'cancelled']);
         }
 
+        AuditLog::create([
+            'tenant_id' => $tenantId,
+            'user_id' => request()->user()->id,
+            'client_id' => $reservation->client_id,
+            'action_type' => 'status_changed',
+            'entity_type' => Reservation::class,
+            'entity_id' => $reservation->id,
+            'description' => "Reserva cancelada: Estado cambió a CANCELADA — Lote liberado: {$reservation->lot->full_identifier}",
+            'old_values' => ['status' => $reservation->getOriginal('status')],
+            'new_values' => ['status' => 'cancelled'],
+        ]);
+
         return redirect()->back()->with('success', 'Reserva cancelada. El lote está disponible nuevamente.');
     }
 
@@ -131,6 +154,18 @@ class ReservationController extends Controller
 
         $reservation->lot->update(['status' => 'sold']);
 
+        AuditLog::create([
+            'tenant_id' => $tenantId,
+            'user_id' => request()->user()->id,
+            'client_id' => $reservation->client_id,
+            'action_type' => 'status_changed',
+            'entity_type' => Reservation::class,
+            'entity_id' => $reservation->id,
+            'description' => "Reserva confirmada. El lote {$reservation->lot->full_identifier} ha sido marcado como vendido.",
+            'old_values' => ['status' => 'active'],
+            'new_values' => ['status' => 'confirmed'],
+        ]);
+
         return redirect()->back()->with('success', 'Reserva confirmada. El lote ha sido vendido.');
     }
 
@@ -154,6 +189,18 @@ class ReservationController extends Controller
         ]);
 
         $reservation->lot->update(['status' => 'reserved']);
+
+        AuditLog::create([
+            'tenant_id' => $tenantId,
+            'user_id' => request()->user()->id,
+            'client_id' => $reservation->client_id,
+            'action_type' => 'status_changed',
+            'entity_type' => Reservation::class,
+            'entity_id' => $reservation->id,
+            'description' => "Reserva auditada y aprobada: Estado cambió a ACTIVA — {$reservation->lot->full_identifier}",
+            'old_values' => ['status' => 'pending_approval'],
+            'new_values' => ['status' => 'active'],
+        ]);
 
         return redirect()->back()->with('success', 'Reserva aprobada exitosamente.');
     }

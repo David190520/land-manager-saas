@@ -6,6 +6,7 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\LotController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReservationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -53,6 +54,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/finances/plans/{paymentPlan}/cancel', [FinanceController::class, 'cancelPlan'])->name('finances.plan.cancel');
     Route::post('/finances/payments/{payment}/record', [FinanceController::class, 'recordPayment'])->name('finances.payment.record');
     Route::get('/finances/payments/{payment}/receipt', [FinanceController::class, 'generateReceipt'])->name('finances.payment.receipt');
+
+    // Notifications (JSON API)
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 
     // Settings
     Route::get('/settings', function () {
