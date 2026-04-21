@@ -35,7 +35,7 @@ const metrics = [
         <!-- Header -->
         <div class="mb-8 animate-fade-in flex items-center gap-4">
             <div>
-                <h1 class="text-2xl font-semibold text-white tracking-tight">Dashboard !</h1>
+                <h1 class="text-2xl font-semibold text-white tracking-tight">Dashboard</h1>
                 <p class="text-sm text-[#71717a] mt-1">Gestión general del portafolio inmobiliario</p>
             </div>
         </div>

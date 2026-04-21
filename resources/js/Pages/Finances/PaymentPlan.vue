@@ -87,6 +87,15 @@ const getStatusClasses = (row, isInitial = false) => {
                 </p>
             </div>
             <div class="flex items-center gap-3">
+                <a
+                    v-if="plan.status === 'completed'"
+                    :href="route('finances.plan.certificate', plan.id)"
+                    target="_blank"
+                    class="bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500 hover:text-white px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1"
+                >
+                    <v-icon name="md-download" scale="0.8" />
+                    Paz y Salvo PDF
+                </a>
                 <button v-if="isAdmin && plan.status === 'active'" @click="showCancelModal = true" class="bg-rose-500/10 text-rose-500 border border-rose-500/30 hover:bg-rose-500 hover:text-white px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
                     <v-icon name="md-cancel-outlined" scale="0.8" />
                     Invalidar Contrato

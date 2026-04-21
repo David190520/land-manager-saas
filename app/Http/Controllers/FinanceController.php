@@ -303,4 +303,32 @@ class FinanceController extends Controller
 
         return $pdf->download('recibo_pago_' . $payment->id . '.pdf');
     }
+
+    public function generateCompletionCertificate(PaymentPlan $paymentPlan)
+    {
+        $tenantId = request()->user()->tenant_id;
+
+        if ($paymentPlan->reservation->lot->block->project->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        if ($paymentPlan->status !== 'completed') {
+            abort(403, 'El plan de pagos no está completado.');
+        }
+
+        $paymentPlan->load('reservation.client', 'reservation.lot.block.project');
+        $tenant = request()->user()->tenant;
+
+        $data = [
+            'plan' => $paymentPlan,
+            'client' => $paymentPlan->reservation->client,
+            'lot' => $paymentPlan->reservation->lot,
+            'project' => $paymentPlan->reservation->lot->block->project,
+            'tenant' => $tenant,
+        ];
+
+        $pdf = Pdf::loadView('pdf.completion_certificate', $data);
+
+        return $pdf->download('paz_y_salvo_' . $paymentPlan->id . '.pdf');
+    }
 }
