@@ -2,15 +2,19 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import EditClientModal from './Partials/EditClientModal.vue';
+import DateInput from '@/Components/DateInput.vue';
 
 const props = defineProps({
     client: Object,
     reservations: Array,
     documents: Array,
     auditLogs: Array,
+    logFilters: Object,
 });
 
 const activeTab = ref('reservations');
+const showingEditModal = ref(false);
 
 // Document upload form
 const documentForm = useForm({
@@ -46,6 +50,31 @@ const formatCurrency = (value) => {
         maximumFractionDigits: 0,
     }).format(value);
 };
+
+const logFiltersForm = useForm({
+    log_type: props.logFilters?.log_type || 'all',
+    log_date_start: props.logFilters?.log_date_start || '',
+    log_date_end: props.logFilters?.log_date_end || '',
+});
+
+const applyLogFilters = () => {
+    router.get(route('clients.show', props.client.id), {
+        log_type: logFiltersForm.log_type,
+        log_date_start: logFiltersForm.log_date_start,
+        log_date_end: logFiltersForm.log_date_end,
+    }, {
+        preserveState: true,
+        replace: true,
+        preserveScroll: true,
+    });
+};
+
+const clearLogFilters = () => {
+    logFiltersForm.log_type = 'all';
+    logFiltersForm.log_date_start = '';
+    logFiltersForm.log_date_end = '';
+    applyLogFilters();
+};
 </script>
 
 <template>
@@ -59,12 +88,19 @@ const formatCurrency = (value) => {
             <span class="text-[#ededed]">{{ client.full_name }}</span>
         </div>
 
+        <EditClientModal :show="showingEditModal" :client="client" @close="showingEditModal = false" />
+
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <!-- Left Sidebar (Profile summary) -->
             <div class="lg:col-span-1 border-r border-[#2a2a2a] pr-4">
                 <div class="sticky top-10">
-                    <div class="w-16 h-16 rounded-xl bg-[#262626] border border-[#3f3f46] flex items-center justify-center text-white text-xl font-bold mb-6">
-                        {{ client.first_name.charAt(0) }}{{ client.last_name.charAt(0) }}
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="w-16 h-16 rounded-xl bg-[#262626] border border-[#3f3f46] flex items-center justify-center text-white text-xl font-bold">
+                            {{ client.first_name.charAt(0) }}{{ client.last_name.charAt(0) }}
+                        </div>
+                        <button @click="showingEditModal = true" class="p-1.5 text-[#71717a] hover:text-white transition-colors bg-[#18181a] border border-[#2a2a2a] rounded shadow-sm" title="Editar Cliente">
+                            <v-icon name="md-edit-outlined" scale="0.8" />
+                        </button>
                     </div>
                     <h1 class="text-xl font-semibold text-white tracking-tight mb-2">{{ client.full_name }}</h1>
                     <div class="space-y-4 text-xs font-medium text-[#71717a]">
@@ -287,16 +323,29 @@ const formatCurrency = (value) => {
                     </div>
                 </div>
 
-                </div>
-
                 <!-- Tab: Audit Logs -->
                 <div v-if="activeTab === 'audit'" class="animate-fade-in space-y-6">
                     <div class="bg-[#18181a] border border-[#2a2a2a] rounded-2xl overflow-hidden relative">
                         <!-- timeline line -->
                         <div class="absolute left-10 top-0 bottom-0 w-px bg-[#2a2a2a] z-0 hidden sm:block"></div>
                         
-                        <div class="px-6 py-4 border-b border-[#2a2a2a] relative z-10 bg-[#18181a]">
-                            <h3 class="text-[10px] font-bold text-white tracking-widest uppercase">Historial de Transacciones (Log)</h3>
+                        <div class="px-6 py-4 border-b border-[#2a2a2a] relative z-10 bg-[#18181a] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <h3 class="text-[10px] font-bold text-white tracking-widest uppercase">Historial de Actividades (Logs)</h3>
+                            
+                            <div class="flex items-center gap-3">
+                                <select v-model="logFiltersForm.log_type" @change="applyLogFilters" class="input-dark bg-[#121212] h-8 text-[10px] py-0 border-[#3f3f46]">
+                                    <option value="all">Todo tipo</option>
+                                    <option value="created">Registros Iniciales</option>
+                                    <option value="updated">Ediciones</option>
+                                    <option value="status_changed">Cambios de Estado</option>
+                                    <option value="payment_recorded">Pagos/Abonos</option>
+                                </select>
+                                <DateInput v-model="logFiltersForm.log_date_start" @update:model-value="applyLogFilters" placeholder="Desde" />
+                                <DateInput v-model="logFiltersForm.log_date_end" @update:model-value="applyLogFilters" placeholder="Hasta" />
+                                <button v-if="logFiltersForm.log_type !== 'all' || logFiltersForm.log_date_start || logFiltersForm.log_date_end" @click="clearLogFilters" class="text-[10px] text-[#71717a] hover:text-white uppercase font-bold tracking-widest px-2" title="Limpiar Filtros">
+                                    <v-icon name="md-close" scale="0.8" />
+                                </button>
+                            </div>
                         </div>
 
                         <div class="p-6 relative z-10">
@@ -350,5 +399,6 @@ const formatCurrency = (value) => {
                 </div>
 
             </div>
+        </div>
     </AppLayout>
 </template>

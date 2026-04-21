@@ -21,6 +21,7 @@
         "vue": "^3.4.0"
     },
     "dependencies": {
+        "@vuepic/vue-datepicker": "^12.1.0",
         "lodash": "^4.18.1",
         "oh-vue-icons": "^1.0.0-rc3"
     }

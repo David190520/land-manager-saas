@@ -42,6 +42,7 @@ import {
     MdEdit,
     MdSearch,
     MdNotificationsactiveOutlined,
+    MdNotes,
 } from "oh-vue-icons/icons";
 
 addIcons(
@@ -79,6 +80,7 @@ addIcons(
     MdEdit,
     MdSearch,
     MdNotificationsactiveOutlined,
+    MdNotes,
 );
 
 const appName = import.meta.env.VITE_APP_NAME || 'Land Manager';

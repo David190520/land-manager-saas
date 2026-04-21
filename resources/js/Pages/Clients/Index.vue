@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import CreateClientModal from './Partials/CreateClientModal.vue';
+import EditClientModal from './Partials/EditClientModal.vue';
 
 const props = defineProps({
     clients: Object,
@@ -11,6 +12,8 @@ const props = defineProps({
 
 const search = ref(props.filters.search || '');
 const showingCreateModal = ref(false);
+const showingEditModal = ref(false);
+const editingClient = ref(null);
 let searchTimeout = null;
 
 watch(search, (value) => {
@@ -25,6 +28,11 @@ watch(search, (value) => {
 
 const openCreateModal = () => {
     showingCreateModal.value = true;
+};
+
+const openEditModal = (client) => {
+    editingClient.value = client;
+    showingEditModal.value = true;
 };
 </script>
 
@@ -45,6 +53,7 @@ const openCreateModal = () => {
         </div>
 
         <CreateClientModal :show="showingCreateModal" @close="showingCreateModal = false" />
+        <EditClientModal :show="showingEditModal" :client="editingClient" @close="showingEditModal = false" />
 
         <!-- Search -->
         <div class="mb-6 animate-slide-up">
@@ -64,7 +73,7 @@ const openCreateModal = () => {
             <table class="table-dark">
                 <thead>
                     <tr>
-                        <th class="font-bold text-[10px] tracking-widest text-[#71717a]">Titular</th>
+                        <th class="font-bold text-[10px] tracking-widest text-[#71717a]">Nombre</th>
                         <th class="font-bold text-[10px] tracking-widest text-[#71717a]">Documento</th>
                         <th class="font-bold text-[10px] tracking-widest text-[#71717a]">Contacto</th>
                         <th class="font-bold text-[10px] tracking-widest text-[#71717a]">Email</th>
@@ -102,9 +111,14 @@ const openCreateModal = () => {
                             </span>
                         </td>
                         <td class="text-right pr-4">
-                            <Link :href="route('clients.show', client.id)" class="text-[10px] font-bold uppercase tracking-widest text-[#71717a] hover:text-white transition-colors">
-                                Abrir
-                            </Link>
+                            <div class="flex items-center justify-end gap-3">
+                                <button @click="openEditModal(client)" class="text-[#71717a] hover:text-white transition-colors" title="Editar">
+                                    <v-icon name="md-edit-outlined" scale="0.9" />
+                                </button>
+                                <Link :href="route('clients.show', client.id)" class="text-[10px] font-bold uppercase tracking-widest text-[#71717a] hover:text-white transition-colors">
+                                    Abrir
+                                </Link>
+                            </div>
                         </td>
                     </tr>
                 </tbody>

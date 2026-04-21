@@ -111,7 +111,7 @@ class ClientController extends Controller
         return redirect()->route('clients.show', $client)->with('success', 'Cliente creado exitosamente.');
     }
 
-    public function show(Client $client)
+    public function show(Request $request, Client $client)
     {
         $this->authorizeClient($client);
 
@@ -162,10 +162,24 @@ class ClientController extends Controller
             ];
         });
 
-        $auditLogs = AuditLog::where('client_id', $client->id)
+        $auditLogQuery = AuditLog::where('client_id', $client->id)
             ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->limit(30)
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('log_type') && $request->log_type !== 'all') {
+            $auditLogQuery->where('action_type', $request->log_type);
+        }
+
+        if ($request->filled('log_date_start')) {
+            $auditLogQuery->whereDate('created_at', '>=', $request->log_date_start);
+        }
+
+        if ($request->filled('log_date_end')) {
+            $auditLogQuery->whereDate('created_at', '<=', $request->log_date_end);
+        }
+
+        $auditLogs = $auditLogQuery
+            ->limit(100)
             ->get()
             ->map(function ($log) {
                 return [
@@ -200,6 +214,11 @@ class ClientController extends Controller
             'reservations' => $reservations,
             'documents' => $documents,
             'auditLogs' => $auditLogs,
+            'logFilters' => [
+                'log_type' => $request->log_type ?? 'all',
+                'log_date_start' => $request->log_date_start ?? '',
+                'log_date_end' => $request->log_date_end ?? '',
+            ],
         ]);
     }
 
@@ -247,7 +266,7 @@ class ClientController extends Controller
                 'entity_type' => Client::class,
                 'entity_id' => $client->id,
                 'description' => "Datos del cliente actualizados: {$changedFields}",
-                'old_values' => $oldValues->only($changes->keys()->toArray()),
+                'old_values' => collect($oldValues)->only($changes->keys()->toArray())->toArray(),
                 'new_values' => $changes->toArray(),
             ]);
         }
