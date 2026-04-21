@@ -301,6 +301,21 @@ class ClientController extends Controller
         return redirect()->back()->with('success', 'Documento subido exitosamente.');
     }
 
+    public function downloadDocument(Client $client, Document $document)
+    {
+        $this->authorizeClient($client);
+
+        if ($document->client_id !== $client->id) {
+            abort(403);
+        }
+
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'El archivo no fue encontrado en el servidor.');
+        }
+
+        return Storage::disk('public')->download($document->file_path, $document->file_name);
+    }
+
     public function deleteDocument(Client $client, Document $document)
     {
         $this->authorizeClient($client);

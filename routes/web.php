@@ -40,6 +40,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
     Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
     Route::post('/clients/{client}/documents', [ClientController::class, 'uploadDocument'])->name('clients.documents.upload');
+    Route::get('/clients/{client}/documents/{document}/download', [ClientController::class, 'downloadDocument'])->name('clients.documents.download');
     Route::delete('/clients/{client}/documents/{document}', [ClientController::class, 'deleteDocument'])->name('clients.documents.delete');
 
     // Reservations

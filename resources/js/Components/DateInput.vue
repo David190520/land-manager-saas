@@ -67,11 +67,12 @@ const format = (date) => {
     --dp-icon-color: #71717a;
     --dp-danger-color: #ef4444;
     --dp-menu-z-index: 9999;
-    width: 140px;
+    width: 150px;
+    min-width: 150px;
 }
 
 .custom-datepicker .dp__input {
-    font-size: 10px;
+    font-size: 11px;
     height: 32px;
     padding-top: 0;
     padding-bottom: 0;

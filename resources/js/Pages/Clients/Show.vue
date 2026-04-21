@@ -18,8 +18,8 @@ const showingEditModal = ref(false);
 
 // Document upload form
 const documentForm = useForm({
-    title: '',
-    document_type: 'id_submited',
+    name: '',
+    type: 'id_copy',
     file: null,
     notes: '',
 });
@@ -56,6 +56,37 @@ const logFiltersForm = useForm({
     log_date_start: props.logFilters?.log_date_start || '',
     log_date_end: props.logFilters?.log_date_end || '',
 });
+
+const formatColumnName = (key) => {
+    const translations = {
+        'first_name': 'Nombre',
+        'last_name': 'Apellido',
+        'document_type': 'Tipo de Documento',
+        'document_number': 'Nro. Documento',
+        'phone': 'Teléfono',
+        'phone_secondary': 'Tel. Alternativo',
+        'email': 'Email',
+        'address': 'Dirección',
+        'city': 'Ciudad',
+        'department': 'Departamento',
+        'notes': 'Notas/Comentarios',
+        'occupation': 'Oficio/Ocupación',
+        'status': 'Estado',
+        'payment_method': 'Forma de Pago',
+        'reference_number': 'Nro. Referencia'
+    };
+    return translations[key] || key;
+};
+
+const formatDocumentType = (type) => {
+    const types = {
+        'id_copy': 'Documento de Identidad (CC / CE)',
+        'contract': 'Promesa de Compraventa',
+        'receipt': 'Soporte de Pago',
+        'other': 'Otro Documento'
+    };
+    return types[type] || type;
+};
 
 const applyLogFilters = () => {
     router.get(route('clients.show', props.client.id), {
@@ -105,11 +136,11 @@ const clearLogFilters = () => {
                     <h1 class="text-xl font-semibold text-white tracking-tight mb-2">{{ client.full_name }}</h1>
                     <div class="space-y-4 text-xs font-medium text-[#71717a]">
                         <p class="flex items-center gap-2">
-                            DNI: <span class="text-white">{{ client.document_type }} {{ client.document_number }}</span>
+                            Nº Documento: <span class="text-white">{{ client.document_type }} {{ client.document_number }}</span>
                         </p>
                         <p class="flex justify-between items-center py-2 border-t border-[#2a2a2a]">
-                            Oficio:
-                            <span class="text-[#a1a1aa]">{{ client.occupation || 'Nro. Designado' }}</span>
+                            Ocupación:
+                            <span class="text-[#a1a1aa]">{{ client.occupation || 'N/D' }}</span>
                         </p>
                         <p class="flex justify-between items-center py-2 border-t border-[#2a2a2a]">
                             Contacto principal:
@@ -248,18 +279,18 @@ const clearLogFilters = () => {
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
-                                <label class="label-dark text-[10px] uppercase font-bold tracking-wider">Categorización</label>
-                                <select v-model="documentForm.document_type" class="input-dark bg-[#121212] h-10 py-0">
-                                    <option value="id_submited">Doc. Identidad Oficial</option>
-                                    <option value="contract">Pacto Vinculante (Contrato)</option>
-                                    <option value="receipt">Comprobante Recaudatorio</option>
-                                    <option value="other">Fojas Adicionales / Otro</option>
+                                <label class="label-dark text-[10px] uppercase font-bold tracking-wider">Tipo de documento</label>
+                                <select v-model="documentForm.type" class="input-dark bg-[#121212] h-10 py-0">
+                                    <option value="id_copy">Documento de Identidad (CC / CE)</option>
+                                    <option value="contract">Promesa de Compraventa</option>
+                                    <option value="receipt">Soporte de Pago</option>
+                                    <option value="other">Otro Documento</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="label-dark text-[10px] uppercase font-bold tracking-wider">Identificador Breve</label>
-                                <input v-model="documentForm.title" type="text" class="input-dark bg-[#121212] h-10" placeholder="Ej: CI Frontal" />
-                                <p v-if="documentForm.errors.title" class="text-red-400 text-[10px] mt-1">{{ documentForm.errors.title }}</p>
+                                <label class="label-dark text-[10px] uppercase font-bold tracking-wider">Nombre del archivo</label>
+                                <input v-model="documentForm.name" type="text" class="input-dark bg-[#121212] h-10" placeholder="Ej: Copia CC Frontal" />
+                                <p v-if="documentForm.errors.name" class="text-red-400 text-[10px] mt-1">{{ documentForm.errors.name }}</p>
                             </div>
                         </div>
 
@@ -283,30 +314,32 @@ const clearLogFilters = () => {
                     <!-- Documents List -->
                     <div class="bg-[#18181a] border border-[#2a2a2a] rounded-2xl overflow-hidden">
                         <div class="px-6 py-4 border-b border-[#2a2a2a]">
-                            <h3 class="text-[10px] font-bold text-white tracking-widest uppercase">Índice Archivístico</h3>
+                            <h3 class="text-[10px] font-bold text-white tracking-widest uppercase">Documentos</h3>
                         </div>
                         <table class="table-dark">
                             <thead>
                                 <tr>
                                     <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Designación</th>
                                     <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Categoría</th>
-                                    <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Alta Digital</th>
+                                    <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Nombre del archivo</th>
+                                    <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Fecha de subida</th>
                                     <th class="text-right"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-if="documents.length === 0">
-                                    <td colspan="4" class="text-center py-12 text-xs text-[#71717a]">Repositorio vacío.</td>
+                                    <td colspan="4" class="text-center py-12 text-xs text-[#71717a]">Sin documentos adjuntos. Usa el formulario anterior para cargar el primer documento.</td>
                                 </tr>
                                 <tr v-for="doc in documents" :key="doc.id" class="border-[#2a2a2a] hover:bg-[#1e1e1e]">
                                     <td class="font-medium text-white text-xs">
                                         <div class="flex items-center gap-2">
                                             <v-icon name="md-attachfile-outlined" scale="0.8" class="text-[#71717a]"/>
-                                            {{ doc.title }}
+                                            {{ doc.name }}
                                         </div>
                                     </td>
-                                    <td class="text-xs text-[#a1a1aa]">{{ doc.document_type_label }}</td>
-                                    <td class="text-[10px] text-[#71717a]">{{ doc.created_at.split('T')[0] }}</td>
+                                    <td class="text-xs text-[#a1a1aa]">{{ formatDocumentType(doc.type) }}</td>
+                                    <td class="text-xs text-[#a1a1aa]">{{ doc.file_name }}</td>
+                                    <td class="text-[10px] text-[#71717a]">{{ doc.created_at }}</td>
                                     <td>
                                         <div class="flex items-center justify-end gap-4">
                                             <a :href="route('clients.documents.download', [client.id, doc.id])" class="text-[#a1a1aa] hover:text-white transition-colors" title="Extraer Original">
@@ -382,7 +415,7 @@ const clearLogFilters = () => {
                                             
                                             <div v-if="log.old_values && log.new_values && Object.keys(log.new_values).length > 0" class="mt-3 pt-3 border-t border-[#2a2a2a]/50 text-[10px] space-y-1.5">
                                                 <div v-for="(newValue, key) in log.new_values" :key="key" class="flex items-start gap-2">
-                                                    <span class="text-[#71717a] w-24 flex-shrink-0">{{ key }}:</span>
+                                                    <span class="text-[#71717a] w-24 flex-shrink-0 font-medium">{{ formatColumnName(key) }}:</span>
                                                     <div class="flex flex-wrap items-center gap-2 flex-1 break-all">
                                                         <span class="text-[#ef4444] line-through opacity-80">{{ log.old_values[key] ?? 'nulo' }}</span>
                                                         <v-icon name="md-keyboardarrowright" scale="0.7" class="text-[#71717a] flex-shrink-0" />
