@@ -25,6 +25,9 @@ class ReservationController extends Controller
             // Initial payment fields
             'initial_payment_percentage' => 'required|numeric|min:1|max:100',
             'initial_payment_deadline' => 'required|date|after_or_equal:today',
+            // Discount fields
+            'discount_type' => 'nullable|in:none,percentage,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
         ], [
             'payment_deadline.after' => 'La fecha límite de consignación debe ser posterior a hoy.',
             'start_date.after_or_equal' => 'El inicio del cobro no puede ser previo a la fecha actual.',
@@ -71,13 +74,15 @@ class ReservationController extends Controller
         // Generate payment plan
         $amortization = new AmortizationService();
         $amortization->generateSchedule(
-            totalPrice: (float) $lot->price,
+            originalPrice: (float) $lot->price,
             downPayment: (float) $validated['down_payment'],
             totalInstallments: $validated['total_installments'],
             startDate: $validated['start_date'],
             reservationId: $reservation->id,
             initialPaymentPercentage: (float) $validated['initial_payment_percentage'],
             initialPaymentDeadline: $validated['initial_payment_deadline'],
+            discountType: $validated['discount_type'] ?? 'none',
+            discountValue: (float) ($validated['discount_value'] ?? 0),
         );
 
         $message = $isAdminOrAccountant

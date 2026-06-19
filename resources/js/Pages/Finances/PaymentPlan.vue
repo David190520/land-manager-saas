@@ -198,6 +198,24 @@ const installmentsBlocked = computed(() => !props.plan.initial_payment_paid);
                     <v-icon name="md-spacedashboard-outlined" scale="1.1" /> Cuadro Resumen Patrimonial
                  </h3>
 
+                 <!-- Discount row (only shown when a discount was applied) -->
+                 <div v-if="plan.discount_type !== 'none' && plan.discount_amount > 0" class="flex items-center gap-4 mb-4 bg-[#121212] border border-[#2a2a2a] rounded-xl p-3">
+                     <div class="flex-1">
+                         <p class="text-[9px] text-[#71717a] uppercase tracking-wider font-bold mb-1">Precio Original</p>
+                         <p class="text-sm font-semibold text-[#a1a1aa] line-through">{{ formatCurrency(plan.original_price) }}</p>
+                     </div>
+                     <div class="flex-1 border-l border-[#2a2a2a] pl-4">
+                         <p class="text-[9px] text-rose-400 uppercase tracking-wider font-bold mb-1">
+                             Descuento {{ plan.discount_type === 'percentage' ? `(${plan.discount_value}%)` : '(Fijo)' }}
+                         </p>
+                         <p class="text-sm font-bold text-rose-300">- {{ formatCurrency(plan.discount_amount) }}</p>
+                     </div>
+                     <div class="flex-1 border-l border-[#2a2a2a] pl-4">
+                         <p class="text-[9px] text-emerald-400 uppercase tracking-wider font-bold mb-1">Precio Final</p>
+                         <p class="text-sm font-bold text-emerald-300">{{ formatCurrency(plan.total_price) }}</p>
+                     </div>
+                 </div>
+
                  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 border border-[#2a2a2a] p-4 rounded-xl bg-[#121212]">
                      <div>
                          <p class="text-[9px] text-[#71717a] uppercase tracking-wider font-bold mb-1">Monto Nominal</p>

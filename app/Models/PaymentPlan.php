@@ -23,6 +23,9 @@ class PaymentPlan extends Model
         'initial_payment_deadline',
         'initial_payment_paid',
         'initial_payment_date',
+        'discount_type',
+        'discount_value',
+        'original_price',
     ];
 
     protected $casts = [
@@ -37,6 +40,8 @@ class PaymentPlan extends Model
         'initial_payment_deadline' => 'date',
         'initial_payment_paid' => 'boolean',
         'initial_payment_date' => 'date',
+        'discount_value' => 'decimal:2',
+        'original_price' => 'decimal:2',
     ];
 
     public function reservation(): BelongsTo

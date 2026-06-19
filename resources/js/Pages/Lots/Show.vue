@@ -88,6 +88,8 @@ const form = useForm({
     start_date: new Date().toISOString().split('T')[0],
     initial_payment_percentage: 30,
     initial_payment_deadline: thirtyDaysFromNow.toISOString().split('T')[0],
+    discount_type: 'none',
+    discount_value: 0,
 });
 
 const submitReservation = () => {
@@ -155,13 +157,24 @@ const formatCurrency = (value) => {
     }).format(value);
 };
 
+const discountAmount = computed(() => {
+    if (form.discount_type === 'percentage') {
+        return Math.round(props.lot.price * (form.discount_value / 100));
+    } else if (form.discount_type === 'fixed') {
+        return Math.min(Number(form.discount_value) || 0, props.lot.price);
+    }
+    return 0;
+});
+
+const finalPrice = computed(() => Math.max(0, props.lot.price - discountAmount.value));
+
 const initialPaymentAmount = computed(() => {
-    return Math.round(props.lot.price * (form.initial_payment_percentage / 100));
+    return Math.round(finalPrice.value * (form.initial_payment_percentage / 100));
 });
 
 const estimatedInstallment = computed(() => {
     if (!form.down_payment || !form.total_installments) return 0;
-    const financed = props.lot.price - form.down_payment - initialPaymentAmount.value;
+    const financed = finalPrice.value - form.down_payment - initialPaymentAmount.value;
     return financed > 0 ? Math.round(financed / form.total_installments) : 0;
 });
 
@@ -517,6 +530,51 @@ const getStatusTextClasses = (status) => {
                             <p v-if="form.errors.payment_proof" class="text-red-400 text-xs mt-1">{{ form.errors.payment_proof }}</p>
                         </div>
 
+                        <!-- Descuento -->
+                        <div class="pt-4 border-t border-[#2a2a2a]">
+                            <p class="text-[10px] font-bold text-[#71717a] uppercase tracking-widest mb-4">Descuento</p>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="label-dark">Tipo de Descuento</label>
+                                    <select v-model="form.discount_type" class="input-dark bg-[#121212]">
+                                        <option value="none">Sin descuento</option>
+                                        <option value="percentage">Porcentaje (%)</option>
+                                        <option value="fixed">Valor fijo (COP)</option>
+                                    </select>
+                                    <p v-if="form.errors.discount_type" class="text-red-400 text-xs mt-1">{{ form.errors.discount_type }}</p>
+                                </div>
+                                <div v-if="form.discount_type !== 'none'">
+                                    <label class="label-dark">
+                                        {{ form.discount_type === 'percentage' ? 'Porcentaje (%)' : 'Valor Fijo (COP)' }}
+                                    </label>
+                                    <input
+                                        v-model="form.discount_value"
+                                        type="number"
+                                        min="0"
+                                        :max="form.discount_type === 'percentage' ? 100 : undefined"
+                                        step="0.01"
+                                        class="input-dark bg-[#121212]"
+                                        placeholder="0"
+                                    />
+                                    <p v-if="form.errors.discount_value" class="text-red-400 text-xs mt-1">{{ form.errors.discount_value }}</p>
+                                </div>
+                            </div>
+                            <div v-if="form.discount_type !== 'none' && discountAmount > 0" class="mt-3 grid grid-cols-3 gap-3">
+                                <div class="bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2">
+                                    <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-1">Precio Original</p>
+                                    <p class="text-xs font-semibold text-[#a1a1aa]">{{ formatCurrency(lot.price) }}</p>
+                                </div>
+                                <div class="bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                                    <p class="text-[9px] text-rose-400 uppercase tracking-wider mb-1">Descuento</p>
+                                    <p class="text-xs font-semibold text-rose-300">- {{ formatCurrency(discountAmount) }}</p>
+                                </div>
+                                <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                                    <p class="text-[9px] text-emerald-400 uppercase tracking-wider mb-1">Precio Final</p>
+                                    <p class="text-xs font-bold text-emerald-300">{{ formatCurrency(finalPrice) }}</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Cuota Inicial -->
                         <div class="pt-4 border-t border-[#2a2a2a]">
                             <p class="text-[10px] font-bold text-[#71717a] uppercase tracking-widest mb-4">Cuota Inicial (30%)</p>
@@ -555,9 +613,17 @@ const getStatusTextClasses = (status) => {
                         <div v-if="form.down_payment && form.total_installments" class="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 mt-6">
                             <p class="text-[10px] font-bold text-white uppercase tracking-widest mb-4">Proyección</p>
                             <div class="grid grid-cols-2 gap-4 text-xs mb-3">
+                                <div v-if="discountAmount > 0">
+                                    <p class="text-[#71717a] mb-1">Precio Original</p>
+                                    <p class="text-[#a1a1aa] font-medium line-through">{{ formatCurrency(lot.price) }}</p>
+                                </div>
                                 <div>
-                                    <p class="text-[#71717a] mb-1">Valor Venta</p>
-                                    <p class="text-white font-medium">{{ formatCurrency(lot.price) }}</p>
+                                    <p class="text-[#71717a] mb-1">{{ discountAmount > 0 ? 'Precio Final' : 'Valor Venta' }}</p>
+                                    <p class="text-white font-medium">{{ formatCurrency(finalPrice) }}</p>
+                                </div>
+                                <div v-if="discountAmount > 0">
+                                    <p class="text-rose-400 mb-1">Descuento</p>
+                                    <p class="text-rose-300 font-medium">- {{ formatCurrency(discountAmount) }}</p>
                                 </div>
                                 <div>
                                     <p class="text-[#71717a] mb-1">Enganche</p>
@@ -569,7 +635,7 @@ const getStatusTextClasses = (status) => {
                                 </div>
                                 <div>
                                     <p class="text-[#71717a] mb-1">Monto Financiable</p>
-                                    <p class="text-white font-medium">{{ formatCurrency(Math.max(0, lot.price - form.down_payment - initialPaymentAmount)) }}</p>
+                                    <p class="text-white font-medium">{{ formatCurrency(Math.max(0, finalPrice - form.down_payment - initialPaymentAmount)) }}</p>
                                 </div>
                             </div>
                             <div class="border-t border-[#2a2a2a] pt-3 mt-1">

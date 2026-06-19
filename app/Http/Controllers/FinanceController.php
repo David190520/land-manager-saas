@@ -143,6 +143,10 @@ class FinanceController extends Controller
                 'initial_payment_amount' => (float) ($paymentPlan->initial_payment_amount ?? 0),
                 'initial_payment_percentage' => (float) $paymentPlan->initial_payment_percentage,
                 'initial_payment_deadline' => $paymentPlan->initial_payment_deadline?->format('Y-m-d'),
+                'original_price' => (float) ($paymentPlan->original_price ?? $paymentPlan->total_price),
+                'discount_type' => $paymentPlan->discount_type ?? 'none',
+                'discount_value' => (float) ($paymentPlan->discount_value ?? 0),
+                'discount_amount' => (float) (($paymentPlan->original_price ?? $paymentPlan->total_price) - $paymentPlan->total_price),
             ],
             'client' => [
                 'id' => $paymentPlan->reservation->client->id,
