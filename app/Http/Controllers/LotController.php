@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Lot;
 use App\Models\Client;
+use App\Models\Seller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,7 +13,7 @@ class LotController extends Controller
 {
     public function show(Lot $lot)
     {
-        $lot->load(['block.project', 'activeReservation.client', 'activeReservation.user', 'activeReservation.paymentPlan.payments']);
+        $lot->load(['block.project', 'activeReservation.client', 'activeReservation.user', 'activeReservation.seller', 'activeReservation.paymentPlan.payments']);
 
         $tenantId = request()->user()->tenant_id;
         if ($lot->block->project->tenant_id !== $tenantId) {
@@ -20,8 +21,8 @@ class LotController extends Controller
         }
 
         $clientsQuery = Client::where('tenant_id', $tenantId);
-        
-        if (request()->user()->role === 'sales_agent') {
+
+        if (request()->user()->role === 'secretary') {
             $clientsQuery->where('user_id', request()->user()->id);
         }
 
@@ -31,6 +32,16 @@ class LotController extends Controller
                 'id' => $c->id,
                 'full_name' => $c->full_name,
                 'document_number' => $c->document_number,
+            ]);
+
+        $sellers = Seller::where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderBy('full_name')
+            ->get()
+            ->map(fn($s) => [
+                'id'              => $s->id,
+                'full_name'       => $s->full_name,
+                'commission_rate' => (float) $s->commission_rate,
             ]);
 
         $reservation = null;
@@ -49,6 +60,10 @@ class LotController extends Controller
                     'id' => $r->user->id,
                     'name' => $r->user->name,
                 ],
+                'seller' => $r->seller_id ? [
+                    'id'        => $r->seller->id,
+                    'full_name' => $r->seller->full_name,
+                ] : null,
                 'down_payment' => (float) $r->down_payment,
                 'payment_deadline' => $r->payment_deadline->format('Y-m-d'),
                 'status' => $r->status,
@@ -97,6 +112,7 @@ class LotController extends Controller
             ],
             'reservation' => $reservation,
             'clients' => $clients,
+            'sellers' => $sellers,
         ]);
     }
 

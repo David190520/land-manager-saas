@@ -28,6 +28,8 @@ class ReservationController extends Controller
             // Discount fields
             'discount_type' => 'nullable|in:none,percentage,fixed',
             'discount_value' => 'nullable|numeric|min:0',
+            // Seller
+            'seller_id' => 'nullable|exists:sellers,id',
         ], [
             'payment_deadline.after' => 'La fecha límite de consignación debe ser posterior a hoy.',
             'start_date.after_or_equal' => 'El inicio del cobro no puede ser previo a la fecha actual.',
@@ -57,14 +59,15 @@ class ReservationController extends Controller
 
         // Create reservation
         $reservation = Reservation::create([
-            'lot_id' => $validated['lot_id'],
-            'client_id' => $validated['client_id'],
-            'user_id' => $request->user()->id,
-            'down_payment' => $validated['down_payment'],
+            'lot_id'           => $validated['lot_id'],
+            'client_id'        => $validated['client_id'],
+            'user_id'          => $request->user()->id,
+            'seller_id'        => $validated['seller_id'] ?? null,
+            'down_payment'     => $validated['down_payment'],
             'payment_deadline' => $validated['payment_deadline'],
-            'payment_proof' => $proofPath,
-            'notes' => $validated['notes'] ?? null,
-            'status' => $initialStatus,
+            'payment_proof'    => $proofPath,
+            'notes'            => $validated['notes'] ?? null,
+            'status'           => $initialStatus,
         ]);
 
         // Update lot status

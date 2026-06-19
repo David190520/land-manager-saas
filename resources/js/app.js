@@ -46,6 +46,7 @@ import {
     MdHistory,
     MdExpandless,
     MdExpandmore,
+    MdRecentactorsOutlined,
 } from "oh-vue-icons/icons";
 
 addIcons(
@@ -87,6 +88,7 @@ addIcons(
     MdHistory,
     MdExpandless,
     MdExpandmore,
+    MdRecentactorsOutlined,
 );
 
 const appName = import.meta.env.VITE_APP_NAME || 'Land Manager';

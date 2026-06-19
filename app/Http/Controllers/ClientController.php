@@ -335,7 +335,7 @@ class ClientController extends Controller
             abort(403);
         }
 
-        if (request()->user()->role === 'sales_agent' && $client->user_id !== request()->user()->id) {
+        if (request()->user()->role === 'secretary' && $client->user_id !== request()->user()->id) {
             abort(403, 'No tienes permiso para ver o modificar este cliente.');
         }
     }

@@ -12,6 +12,7 @@ class Reservation extends Model
         'lot_id',
         'client_id',
         'user_id',
+        'seller_id',
         'down_payment',
         'payment_deadline',
         'status',
@@ -41,6 +42,11 @@ class Reservation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(Seller::class);
     }
 
     public function paymentPlan(): HasOne

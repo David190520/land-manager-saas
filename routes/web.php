@@ -8,6 +8,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\SellerController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +69,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+
+    // Sellers + Commissions (admin only)
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/sellers', [SellerController::class, 'index'])->name('sellers.index');
+        Route::post('/sellers', [SellerController::class, 'store'])->name('sellers.store');
+        Route::put('/sellers/{seller}', [SellerController::class, 'update'])->name('sellers.update');
+        Route::delete('/sellers/{seller}', [SellerController::class, 'destroy'])->name('sellers.destroy');
+        Route::post('/commissions/{commission}/pay', [SellerController::class, 'markCommissionPaid'])->name('commissions.pay');
+    });
 
     // Settings + User Management (admin only)
     Route::middleware('role:admin')->group(function () {

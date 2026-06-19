@@ -11,6 +11,7 @@ const props = defineProps({
     lot: Object,
     reservation: Object,
     clients: Array,
+    sellers: Array,
 });
 
 const page = usePage();
@@ -80,6 +81,7 @@ thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 const form = useForm({
     lot_id: props.lot.id,
     client_id: '',
+    seller_id: '',
     down_payment: '',
     payment_deadline: '',
     payment_proof: null,
@@ -453,7 +455,7 @@ const historyIconBg = (actionType) => ({
                     </div>
 
                     <!-- Reservation Details Table -->
-                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-0 mb-8 border border-[#2a2a2a] rounded-xl overflow-hidden bg-[#121212]">
+                    <div class="grid grid-cols-2 lg:grid-cols-6 gap-0 mb-8 border border-[#2a2a2a] rounded-xl overflow-hidden bg-[#121212]">
                         <div class="p-4 border-r border-b lg:border-b-0 border-[#2a2a2a]">
                             <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Enganche</p>
                             <p class="text-sm font-bold text-white">{{ formatCurrency(reservation.down_payment) }}</p>
@@ -473,6 +475,10 @@ const historyIconBg = (actionType) => ({
                         <div class="p-4">
                             <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Asesor</p>
                             <p class="text-xs font-semibold text-white truncate">{{ reservation.agent.name }}</p>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-[9px] text-[#71717a] uppercase tracking-wider mb-2">Vendedor</p>
+                            <p class="text-xs font-semibold text-white truncate">{{ reservation.seller?.full_name ?? '—' }}</p>
                         </div>
                     </div>
 
@@ -553,6 +559,18 @@ const historyIconBg = (actionType) => ({
                             <button type="button" @click="showCreateClientModal = true" class="text-[10px] text-white underline mt-2 inline-block hover:opacity-75">
                                 Registrar nuevo perfil
                             </button>
+                        </div>
+
+                        <!-- Seller -->
+                        <div v-if="sellers && sellers.length > 0">
+                            <label class="label-dark">Vendedor Asignado <span class="text-[#71717a]">(opcional)</span></label>
+                            <select v-model="form.seller_id" class="input-dark bg-[#121212]">
+                                <option value="">Sin vendedor</option>
+                                <option v-for="seller in sellers" :key="seller.id" :value="seller.id">
+                                    {{ seller.full_name }} ({{ seller.commission_rate }}%)
+                                </option>
+                            </select>
+                            <p v-if="form.errors.seller_id" class="text-red-400 text-xs mt-1">{{ form.errors.seller_id }}</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-6 pt-4 border-t border-[#2a2a2a]">

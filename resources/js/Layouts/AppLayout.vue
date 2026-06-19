@@ -34,6 +34,12 @@ const navigation = [
         roles: ['admin', 'accountant'],
     },
     {
+        name: 'Personal',
+        href: 'sellers.index',
+        icon: 'md-recentactors-outlined',
+        roles: ['admin'],
+    },
+    {
         name: 'Configuración',
         href: 'settings.index',
         icon: 'md-settings-outlined',
