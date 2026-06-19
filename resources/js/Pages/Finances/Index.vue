@@ -65,6 +65,7 @@ const formatCurrency = (value) => {
                     <option value="">Todos los Estados</option>
                     <option value="overdue">En Mora</option>
                     <option value="pending_approval">Pdte. Aprobación</option>
+                    <option value="pending_initial_payment">Cuota Inicial Pdte.</option>
                     <option value="active">Vigentes</option>
                     <option value="completed">Saldados</option>
                     <option value="cancelled">Cancelados</option>
@@ -137,7 +138,8 @@ const formatCurrency = (value) => {
                     <tr v-for="plan in plans.data" :key="plan.id" 
                         class="border-[#2a2a2a] transition-colors"
                         :class="[
-                            plan.is_overdue ? 'bg-[#2a1313] hover:bg-[#3d1a1a]' : 
+                            plan.is_overdue ? 'bg-[#2a1313] hover:bg-[#3d1a1a]' :
+                            plan.status === 'pending_initial_payment' ? 'bg-amber-900/10 hover:bg-amber-900/20' :
                             plan.status === 'completed' ? 'bg-[#132a13] hover:bg-[#1a3d1a]' :
                             plan.status === 'cancelled' ? 'bg-[#1a1a1a] opacity-60 hover:opacity-100 hover:bg-[#222222]' :
                             'hover:bg-[#1e1e1e]'
@@ -169,11 +171,17 @@ const formatCurrency = (value) => {
                             <span :class="[
                                 'inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border',
                                 plan.reservation_status === 'pending_approval' ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' :
+                                plan.status === 'pending_initial_payment' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
                                 plan.status === 'active' ? 'bg-white text-black border-white' :
                                 plan.status === 'completed' ? 'bg-[#132a13] text-[#4ade80] border-[#4ade80]/30' :
                                 'bg-[#121212] text-[#71717a] border-[#2a2a2a]'
                             ]">
-                                {{ plan.reservation_status === 'pending_approval' ? 'Pdte. Aprob.' : plan.status === 'active' ? 'Vigente' : plan.status === 'completed' ? 'Saldado' : 'Cancelado' }}
+                                {{
+                                    plan.reservation_status === 'pending_approval' ? 'Pdte. Aprob.' :
+                                    plan.status === 'pending_initial_payment' ? 'CI Pendiente' :
+                                    plan.status === 'active' ? 'Vigente' :
+                                    plan.status === 'completed' ? 'Saldado' : 'Cancelado'
+                                }}
                             </span>
                         </td>
                         <td class="text-right pr-4">

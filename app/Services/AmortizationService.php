@@ -11,15 +11,19 @@ class AmortizationService
     /**
      * Generate a linear amortization schedule.
      * 0% interest - simple division of financed amount by number of installments.
+     * The plan starts as 'pending_initial_payment' until the initial payment is recorded.
      */
     public function generateSchedule(
         float $totalPrice,
         float $downPayment,
         int $totalInstallments,
         string $startDate,
-        int $reservationId
+        int $reservationId,
+        float $initialPaymentPercentage = 30.0,
+        ?string $initialPaymentDeadline = null,
     ): PaymentPlan {
-        $financedAmount = $totalPrice - $downPayment;
+        $initialPaymentAmount = round($totalPrice * ($initialPaymentPercentage / 100), 2);
+        $financedAmount = $totalPrice - $downPayment - $initialPaymentAmount;
         $installmentAmount = round($financedAmount / $totalInstallments, 2);
 
         // Handle rounding remainder on last installment
@@ -34,7 +38,11 @@ class AmortizationService
             'installment_amount' => $installmentAmount,
             'interest_rate' => 0,
             'start_date' => $startDate,
-            'status' => 'active',
+            'status' => 'pending_initial_payment',
+            'initial_payment_percentage' => $initialPaymentPercentage,
+            'initial_payment_amount' => $initialPaymentAmount,
+            'initial_payment_deadline' => $initialPaymentDeadline ?? now()->addDays(30)->toDateString(),
+            'initial_payment_paid' => false,
         ]);
 
         $date = Carbon::parse($startDate);

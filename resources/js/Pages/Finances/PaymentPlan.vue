@@ -18,6 +18,7 @@ const isAdmin = computed(() => ['admin', 'accountant'].includes(page.props.auth.
 const payingPayment = ref(null);
 const showCancelModal = ref(false);
 const cancelForm = useForm({});
+const initialPaymentForm = useForm({});
 
 const cancelPlan = () => {
     cancelForm.post(route('finances.plan.cancel', props.plan.id), {
@@ -25,6 +26,10 @@ const cancelPlan = () => {
             showCancelModal.value = false;
         }
     });
+};
+
+const registerInitialPayment = () => {
+    initialPaymentForm.post(route('finances.plan.initial-payment', props.plan.id));
 };
 
 const paymentForm = useForm({
@@ -57,7 +62,7 @@ const formatCurrency = (value) => {
 
 const getStatusClasses = (row, isInitial = false) => {
     if (row.is_overdue) {
-        return isInitial 
+        return isInitial
             ? 'bg-amber-500/20 text-amber-500 border-amber-500/30 font-black animate-pulse'
             : 'bg-rose-500/20 text-rose-500 border-rose-500/30 font-black animate-pulse';
     }
@@ -66,6 +71,24 @@ const getStatusClasses = (row, isInitial = false) => {
         'paid': 'bg-white text-black border-white',
     }[row.status] || 'bg-[#18181a] text-[#a1a1aa] border-[#2a2a2a]';
 };
+
+const planStatusLabel = computed(() => {
+    if (props.plan.reservation_status === 'pending_approval') return 'Pdte. Aprobación';
+    if (props.plan.status === 'pending_initial_payment') return 'Cuota Inicial Pdte.';
+    if (props.plan.status === 'active') return 'En Curso';
+    if (props.plan.status === 'completed') return 'Ejecutado';
+    return 'Invalidado';
+});
+
+const planStatusClasses = computed(() => {
+    if (props.plan.reservation_status === 'pending_approval') return 'bg-amber-500/20 text-amber-500 border-amber-500/30';
+    if (props.plan.status === 'pending_initial_payment') return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+    if (props.plan.status === 'active') return 'bg-white text-black border-white';
+    if (props.plan.status === 'completed') return 'bg-[#262626] text-[#ededed] border-[#4b5563]';
+    return 'bg-[#121212] text-[#71717a] border-[#2a2a2a]';
+});
+
+const installmentsBlocked = computed(() => !props.plan.initial_payment_paid);
 </script>
 
 <template>
@@ -77,6 +100,37 @@ const getStatusClasses = (row, isInitial = false) => {
             <Link :href="route('finances.index')" class="hover:text-white transition-colors">Libro Mayor</Link>
             <v-icon name="md-keyboardarrowright" scale="0.8" />
             <span class="text-[#ededed]">Expediente P-{{ plan.id }}</span>
+        </div>
+
+        <!-- Initial Payment Pending Banner -->
+        <div v-if="!plan.initial_payment_paid" class="mb-6 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4 animate-fade-in">
+            <div class="flex items-center gap-4 flex-1">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                    <v-icon name="md-warningamber-outlined" scale="1.2" fill="#f59e0b" />
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-amber-400">Cuota inicial pendiente — contrato bloqueado</p>
+                    <p class="text-[11px] text-amber-500/80 mt-0.5">
+                        {{ formatCurrency(plan.initial_payment_amount) }} ({{ plan.initial_payment_percentage }}% del total) — Vence: {{ plan.initial_payment_deadline }}
+                    </p>
+                </div>
+            </div>
+            <button
+                v-if="isAdmin"
+                @click="registerInitialPayment"
+                :disabled="initialPaymentForm.processing"
+                class="bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl transition-colors shrink-0 disabled:opacity-50"
+            >
+                {{ initialPaymentForm.processing ? 'Registrando...' : 'Registrar Cuota Inicial' }}
+            </button>
+        </div>
+
+        <!-- Initial Payment Registered Badge -->
+        <div v-else-if="plan.initial_payment_date" class="mb-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3 animate-fade-in">
+            <v-icon name="ri-checkbox-circle-line" scale="1.1" fill="#4ade80" />
+            <p class="text-xs text-emerald-400 font-semibold">
+                Cuota inicial pagada el {{ plan.initial_payment_date }} — {{ formatCurrency(plan.initial_payment_amount) }}
+            </p>
         </div>
 
         <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -96,20 +150,18 @@ const getStatusClasses = (row, isInitial = false) => {
                     <v-icon name="md-download" scale="0.8" />
                     Paz y Salvo PDF
                 </a>
-                <button v-if="isAdmin && plan.status === 'active'" @click="showCancelModal = true" class="bg-rose-500/10 text-rose-500 border border-rose-500/30 hover:bg-rose-500 hover:text-white px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
+                <button
+                    v-if="isAdmin && (plan.status === 'active' || plan.status === 'pending_initial_payment')"
+                    @click="showCancelModal = true"
+                    class="bg-rose-500/10 text-rose-500 border border-rose-500/30 hover:bg-rose-500 hover:text-white px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1"
+                >
                     <v-icon name="md-cancel-outlined" scale="0.8" />
                     Invalidar Contrato
                 </button>
                 <div class="bg-[#121212] border border-[#2a2a2a] rounded-lg px-4 py-2 flex items-center gap-4 text-xs font-semibold uppercase tracking-widest text-[#71717a]">
                     <span>Status de Plan:</span>
-                    <span :class="[
-                        'px-2 py-0.5 rounded border',
-                        plan.reservation_status === 'pending_approval' ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' :
-                        plan.status === 'active' ? 'bg-white text-black border-white' :
-                        plan.status === 'completed' ? 'bg-[#262626] text-[#ededed] border-[#4b5563]' :
-                        'bg-[#121212] text-[#71717a] border-[#2a2a2a]'
-                    ]">
-                        {{ plan.reservation_status === 'pending_approval' ? 'Pdte. Aprobación' : plan.status === 'active' ? 'En Curso' : plan.status === 'completed' ? 'Ejecutado' : 'Invalidado' }}
+                    <span :class="['px-2 py-0.5 rounded border', planStatusClasses]">
+                        {{ planStatusLabel }}
                     </span>
                 </div>
             </div>
@@ -185,7 +237,7 @@ const getStatusClasses = (row, isInitial = false) => {
             <div class="px-6 py-4 border-b border-[#2a2a2a] bg-[#121212]">
                 <h3 class="text-[10px] font-bold text-white tracking-widest uppercase">Matriz de Pagos Proyectados</h3>
             </div>
-            
+
             <div class="overflow-x-auto">
                 <table class="table-dark">
                     <thead>
@@ -200,7 +252,7 @@ const getStatusClasses = (row, isInitial = false) => {
                         </tr>
                     </thead>
                     <tbody class="text-xs">
-                        <tr v-for="row in amortizationTable" :key="row.installment" 
+                        <tr v-for="row in amortizationTable" :key="row.installment"
                             class="border-[#2a2a2a] transition-colors"
                             :class="row.is_overdue ? 'bg-[#2a1313] hover:bg-[#3d1a1a]' : 'hover:bg-[#1e1e1e]'"
                         >
@@ -219,9 +271,9 @@ const getStatusClasses = (row, isInitial = false) => {
                                     <button
                                         v-if="row.status !== 'paid'"
                                         @click="openPaymentModal(row)"
-                                        :disabled="plan.reservation_status === 'pending_approval'"
-                                        :class="plan.reservation_status === 'pending_approval' ? 'opacity-30 cursor-not-allowed border-[#2a2a2a] text-[#71717a]' : 'text-white hover:text-[#a1a1aa] border-[#3f3f46]'"
-                                        :title="plan.reservation_status === 'pending_approval' ? 'Aprobación de reserva requerida para pagos' : 'Aportar Cuota'"
+                                        :disabled="plan.reservation_status === 'pending_approval' || installmentsBlocked"
+                                        :class="(plan.reservation_status === 'pending_approval' || installmentsBlocked) ? 'opacity-30 cursor-not-allowed border-[#2a2a2a] text-[#71717a]' : 'text-white hover:text-[#a1a1aa] border-[#3f3f46]'"
+                                        :title="installmentsBlocked ? 'Debe registrarse la cuota inicial antes de recibir cuotas de amortización' : plan.reservation_status === 'pending_approval' ? 'Aprobación de reserva requerida para pagos' : 'Aportar Cuota'"
                                         class="text-[10px] uppercase font-bold tracking-widest transition-colors flex items-center gap-1 bg-[#262626] border px-3 py-1.5 rounded"
                                     >
                                         <v-icon name="md-add" scale="0.7"/> Aportar

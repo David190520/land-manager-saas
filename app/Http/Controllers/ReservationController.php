@@ -22,9 +22,13 @@ class ReservationController extends Controller
             // Payment plan fields
             'total_installments' => 'required|integer|min:1|max:120',
             'start_date' => 'required|date|after_or_equal:today',
+            // Initial payment fields
+            'initial_payment_percentage' => 'required|numeric|min:1|max:100',
+            'initial_payment_deadline' => 'required|date|after_or_equal:today',
         ], [
             'payment_deadline.after' => 'La fecha límite de consignación debe ser posterior a hoy.',
             'start_date.after_or_equal' => 'El inicio del cobro no puede ser previo a la fecha actual.',
+            'initial_payment_deadline.after_or_equal' => 'La fecha límite de cuota inicial no puede ser anterior a hoy.',
         ]);
 
         $lot = Lot::with('block.project')->findOrFail($validated['lot_id']);
@@ -72,6 +76,8 @@ class ReservationController extends Controller
             totalInstallments: $validated['total_installments'],
             startDate: $validated['start_date'],
             reservationId: $reservation->id,
+            initialPaymentPercentage: (float) $validated['initial_payment_percentage'],
+            initialPaymentDeadline: $validated['initial_payment_deadline'],
         );
 
         $message = $isAdminOrAccountant
@@ -85,26 +91,28 @@ class ReservationController extends Controller
             'action_type' => 'created',
             'entity_type' => Reservation::class,
             'entity_id' => $reservation->id,
-            'description' => "Contrato estructurado para {$lot->full_identifier} | Enganche: $" . number_format((float)$validated['down_payment'], 0, ',', '.'),
+            'description' => "Contrato estructurado para {$lot->full_identifier} | Enganche: $" . number_format((float)$validated['down_payment'], 0, ',', '.') . " | Cuota inicial: {$validated['initial_payment_percentage']}%",
         ]);
 
         return redirect()->route('projects.show', $lot->block->project_id)->with('success', $message);
     }
 
-    public function cancel(Reservation $reservation)
+    public function cancel(Request $request, Reservation $reservation)
     {
-        $tenantId = request()->user()->tenant_id;
+        $tenantId = $request->user()->tenant_id;
         if ($reservation->lot->block->project->tenant_id !== $tenantId) {
             abort(403);
         }
 
-        if (!in_array(request()->user()->role, ['admin', 'accountant'])) {
+        if (!in_array($request->user()->role, ['admin', 'accountant'])) {
             abort(403, 'No autorizado.');
         }
 
         if (!in_array($reservation->status, ['active', 'pending_approval'])) {
             return redirect()->back()->withErrors(['status' => 'Solo se pueden cancelar reservas activas o pendientes.']);
         }
+
+        $refundDownPayment = $request->boolean('refund_down_payment', false);
 
         $reservation->update([
             'status' => 'cancelled',
@@ -117,14 +125,18 @@ class ReservationController extends Controller
             $reservation->paymentPlan->update(['status' => 'cancelled']);
         }
 
+        $refundNote = $refundDownPayment
+            ? ' — Devolución de apartado autorizada.'
+            : ' — Sin devolución de apartado.';
+
         AuditLog::create([
             'tenant_id' => $tenantId,
-            'user_id' => request()->user()->id,
+            'user_id' => $request->user()->id,
             'client_id' => $reservation->client_id,
             'action_type' => 'status_changed',
             'entity_type' => Reservation::class,
             'entity_id' => $reservation->id,
-            'description' => "Reserva cancelada: Estado cambió a CANCELADA — Lote liberado: {$reservation->lot->full_identifier}",
+            'description' => "Reserva cancelada: Estado cambió a CANCELADA — Lote liberado: {$reservation->lot->full_identifier}{$refundNote}",
             'old_values' => ['status' => $reservation->getOriginal('status')],
             'new_values' => ['status' => 'cancelled'],
         ]);

@@ -138,6 +138,11 @@ class FinanceController extends Controller
                 'start_date' => $paymentPlan->start_date->format('Y-m-d'),
                 'status' => $paymentPlan->status,
                 'reservation_status' => $paymentPlan->reservation->status,
+                'initial_payment_paid' => $paymentPlan->initial_payment_paid,
+                'initial_payment_date' => $paymentPlan->initial_payment_date?->format('Y-m-d'),
+                'initial_payment_amount' => (float) ($paymentPlan->initial_payment_amount ?? 0),
+                'initial_payment_percentage' => (float) $paymentPlan->initial_payment_percentage,
+                'initial_payment_deadline' => $paymentPlan->initial_payment_deadline?->format('Y-m-d'),
             ],
             'client' => [
                 'id' => $paymentPlan->reservation->client->id,
@@ -172,6 +177,10 @@ class FinanceController extends Controller
 
         if ($payment->status === 'paid') {
             return redirect()->back()->withErrors(['payment' => 'Este pago ya fue registrado.']);
+        }
+
+        if (!$payment->paymentPlan->initial_payment_paid) {
+            return redirect()->back()->withErrors(['payment' => 'La cuota inicial no ha sido pagada. Registre el pago de cuota inicial antes de recibir cuotas de amortización.']);
         }
 
         $validated = $request->validate([
@@ -231,6 +240,54 @@ class FinanceController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Pago registrado exitosamente.');
+    }
+
+    public function registerInitialPayment(Request $request, PaymentPlan $paymentPlan)
+    {
+        $tenantId = $request->user()->tenant_id;
+        if ($paymentPlan->reservation->lot->block->project->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        if (!in_array($request->user()->role, ['admin', 'accountant'])) {
+            abort(403, 'No autorizado.');
+        }
+
+        if ($paymentPlan->initial_payment_paid) {
+            return redirect()->back()->withErrors(['initial_payment' => 'La cuota inicial ya fue registrada.']);
+        }
+
+        $paymentPlan->update([
+            'initial_payment_paid' => true,
+            'initial_payment_date' => now()->toDateString(),
+            'status' => 'active',
+        ]);
+
+        $client = $paymentPlan->reservation->client;
+
+        AuditLog::create([
+            'tenant_id' => $tenantId,
+            'user_id' => $request->user()->id,
+            'client_id' => $client->id,
+            'action_type' => 'payment_recorded',
+            'entity_type' => PaymentPlan::class,
+            'entity_id' => $paymentPlan->id,
+            'description' => "Cuota inicial registrada — $" . number_format((float) $paymentPlan->initial_payment_amount, 0, ',', '.') . " ({$paymentPlan->initial_payment_percentage}%) — {$client->full_name}",
+        ]);
+
+        InternalNotification::create([
+            'tenant_id' => $tenantId,
+            'user_id' => null,
+            'type' => 'payment_recorded',
+            'urgency' => 'info',
+            'title' => 'Cuota inicial registrada',
+            'message' => "Cuota inicial de {$client->full_name} registrada. Contrato activado.",
+            'reference_type' => PaymentPlan::class,
+            'reference_id' => $paymentPlan->id,
+            'action_url' => "/finances/plans/{$paymentPlan->id}",
+        ]);
+
+        return redirect()->back()->with('success', 'Cuota inicial registrada. El contrato está ahora activo.');
     }
 
     public function cancelPlan(Request $request, PaymentPlan $paymentPlan)

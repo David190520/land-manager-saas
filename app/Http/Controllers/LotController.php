@@ -65,6 +65,9 @@ class LotController extends Controller
                     'remaining_balance' => $r->paymentPlan->remaining_balance,
                     'progress' => $r->paymentPlan->progress_percentage,
                     'status' => $r->paymentPlan->status,
+                    'initial_payment_paid' => $r->paymentPlan->initial_payment_paid,
+                    'initial_payment_amount' => (float) ($r->paymentPlan->initial_payment_amount ?? 0),
+                    'initial_payment_deadline' => $r->paymentPlan->initial_payment_deadline?->format('Y-m-d'),
                 ] : null,
             ];
         }

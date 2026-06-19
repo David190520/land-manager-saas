@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import Modal from '@/Components/Modal.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import CreateClientModal from '@/Pages/Clients/Partials/CreateClientModal.vue';
@@ -21,6 +21,9 @@ const isAdmin = computed(() => {
 const showReservationForm = ref(false);
 const showCreateClientModal = ref(false);
 const showEditLotModal = ref(false);
+const showCancelRefundModal = ref(false);
+const refundDownPayment = ref(false);
+
 const confirmDialog = ref({
     show: false,
     title: '',
@@ -71,6 +74,9 @@ const submitEditLot = () => {
     });
 };
 
+const thirtyDaysFromNow = new Date();
+thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
 const form = useForm({
     lot_id: props.lot.id,
     client_id: '',
@@ -80,6 +86,8 @@ const form = useForm({
     notes: '',
     total_installments: 12,
     start_date: new Date().toISOString().split('T')[0],
+    initial_payment_percentage: 30,
+    initial_payment_deadline: thirtyDaysFromNow.toISOString().split('T')[0],
 });
 
 const submitReservation = () => {
@@ -97,13 +105,26 @@ const handleProofUpload = (event) => {
 };
 
 const cancelReservation = () => {
-    openConfirm(
-        'Liberar Inmueble',
-        '¿Está seguro de cancelar esta reserva? El lote quedará disponible para la venta nuevamente de forma inmediata.',
-        'Liberar Lote',
-        'danger',
-        () => router.post(route('reservations.cancel', props.reservation.id))
-    );
+    // If initial payment hasn't been paid, ask about refunding the down payment
+    if (props.reservation?.payment_plan && !props.reservation.payment_plan.initial_payment_paid) {
+        refundDownPayment.value = false;
+        showCancelRefundModal.value = true;
+    } else {
+        openConfirm(
+            'Liberar Inmueble',
+            '¿Está seguro de cancelar esta reserva? El lote quedará disponible para la venta nuevamente de forma inmediata.',
+            'Liberar Lote',
+            'danger',
+            () => router.post(route('reservations.cancel', props.reservation.id))
+        );
+    }
+};
+
+const executeCancelWithRefund = () => {
+    router.post(route('reservations.cancel', props.reservation.id), {
+        refund_down_payment: refundDownPayment.value,
+    });
+    showCancelRefundModal.value = false;
 };
 
 const confirmReservation = () => {
@@ -134,9 +155,13 @@ const formatCurrency = (value) => {
     }).format(value);
 };
 
+const initialPaymentAmount = computed(() => {
+    return Math.round(props.lot.price * (form.initial_payment_percentage / 100));
+});
+
 const estimatedInstallment = computed(() => {
     if (!form.down_payment || !form.total_installments) return 0;
-    const financed = props.lot.price - form.down_payment;
+    const financed = props.lot.price - form.down_payment - initialPaymentAmount.value;
     return financed > 0 ? Math.round(financed / form.total_installments) : 0;
 });
 
@@ -166,7 +191,7 @@ const getStatusTextClasses = (status) => {
     <AppLayout>
         <Head :title="`Lote ${lot.lot_number} - ${lot.block.name}`" />
 
-        <ConfirmModal 
+        <ConfirmModal
             :show="confirmDialog.show"
             :title="confirmDialog.title"
             :message="confirmDialog.message"
@@ -175,6 +200,46 @@ const getStatusTextClasses = (status) => {
             @close="closeConfirm"
             @confirm="executeConfirm"
         />
+
+        <!-- Cancel with refund modal -->
+        <Teleport to="body">
+            <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition-all duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+                <div v-if="showCancelRefundModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showCancelRefundModal = false"></div>
+                    <div class="relative w-full max-w-md bg-[#18181a] border border-[#2a2a2a] p-8 rounded-2xl animate-slide-up shadow-2xl">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-[#2a2a2a]">
+                            <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center">
+                                <v-icon name="md-cancel-outlined" scale="1.1" fill="#f43f5e" />
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-white">Liberar Inmueble</h2>
+                                <p class="text-[10px] text-[#71717a] uppercase tracking-wider font-medium">Cuota inicial no registrada</p>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-[#a1a1aa] mb-6 leading-relaxed">
+                            La cuota inicial de este contrato aún no ha sido pagada. Al cancelar, el lote quedará disponible nuevamente.
+                        </p>
+
+                        <div class="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 mb-6">
+                            <p class="text-[10px] text-[#71717a] uppercase tracking-wider font-bold mb-3">Apartado recibido</p>
+                            <p class="text-xl font-bold text-white">{{ formatCurrency(reservation.down_payment) }}</p>
+                            <label class="flex items-center gap-3 mt-4 cursor-pointer group">
+                                <input type="checkbox" v-model="refundDownPayment" class="w-4 h-4 rounded border-[#3f3f46] bg-[#18181a] text-white" />
+                                <span class="text-xs text-[#a1a1aa] group-hover:text-white transition-colors">Autorizar devolución del apartado al cliente</span>
+                            </label>
+                        </div>
+
+                        <div class="flex justify-end gap-3">
+                            <button type="button" @click="showCancelRefundModal = false" class="btn-secondary">Mantener Reserva</button>
+                            <button type="button" @click="executeCancelWithRefund" class="bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded transition-colors">
+                                Liberar Lote
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
 
         <Modal :show="showEditLotModal" maxWidth="md" @close="showEditLotModal = false">
             <div class="p-8 relative overflow-hidden bg-[#18181a]">
@@ -220,7 +285,7 @@ const getStatusTextClasses = (status) => {
                         <label class="label-dark">Precio Base (COP)</label>
                         <CurrencyInput v-model="lotForm.price" prefix="$" placeholder="Valor total" />
                     </div>
-                    
+
                     <div>
                         <label class="label-dark">Notas internas (Morfología, esquina, etc)</label>
                         <textarea v-model="lotForm.notes" rows="2" class="input-dark bg-[#121212]"></textarea>
@@ -236,9 +301,9 @@ const getStatusTextClasses = (status) => {
             </div>
         </Modal>
 
-        <CreateClientModal 
-            :show="showCreateClientModal" 
-            @close="showCreateClientModal = false" 
+        <CreateClientModal
+            :show="showCreateClientModal"
+            @close="showCreateClientModal = false"
         />
 
         <!-- Breadcrumb -->
@@ -354,6 +419,17 @@ const getStatusTextClasses = (status) => {
                         </div>
                     </div>
 
+                    <!-- Initial Payment Pending Warning -->
+                    <div v-if="reservation.payment_plan && !reservation.payment_plan.initial_payment_paid" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6 flex items-center gap-3">
+                        <v-icon name="md-warningamber-outlined" scale="1.2" fill="#f59e0b" class="shrink-0" />
+                        <div>
+                            <p class="text-xs font-bold text-amber-400">Cuota inicial pendiente</p>
+                            <p class="text-[10px] text-amber-500/80 mt-0.5">
+                                {{ formatCurrency(reservation.payment_plan.initial_payment_amount) }} — Vence: {{ reservation.payment_plan.initial_payment_deadline }}
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Payment Plan Summary -->
                     <div v-if="reservation.payment_plan" class="bg-[#121212] border border-[#2a2a2a] rounded-xl p-6 mb-8 mt-6">
                         <div class="flex items-center justify-between mb-6">
@@ -441,6 +517,27 @@ const getStatusTextClasses = (status) => {
                             <p v-if="form.errors.payment_proof" class="text-red-400 text-xs mt-1">{{ form.errors.payment_proof }}</p>
                         </div>
 
+                        <!-- Cuota Inicial -->
+                        <div class="pt-4 border-t border-[#2a2a2a]">
+                            <p class="text-[10px] font-bold text-[#71717a] uppercase tracking-widest mb-4">Cuota Inicial (30%)</p>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="label-dark">Porcentaje (%)</label>
+                                    <input v-model="form.initial_payment_percentage" type="number" min="1" max="100" step="0.5" class="input-dark bg-[#121212]" />
+                                    <p v-if="form.errors.initial_payment_percentage" class="text-red-400 text-xs mt-1">{{ form.errors.initial_payment_percentage }}</p>
+                                </div>
+                                <div>
+                                    <label class="label-dark">Fecha Límite Cuota Inicial</label>
+                                    <input v-model="form.initial_payment_deadline" type="date" class="input-dark bg-[#121212]" />
+                                    <p v-if="form.errors.initial_payment_deadline" class="text-red-400 text-xs mt-1">{{ form.errors.initial_payment_deadline }}</p>
+                                </div>
+                            </div>
+                            <div class="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-3 flex items-center justify-between">
+                                <span class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">Valor de Cuota Inicial</span>
+                                <span class="text-sm font-bold text-amber-300">{{ formatCurrency(initialPaymentAmount) }}</span>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-2 gap-6">
                             <div>
                                 <label class="label-dark">Plazo (Meses)</label>
@@ -457,19 +554,27 @@ const getStatusTextClasses = (status) => {
                         <!-- Preview -->
                         <div v-if="form.down_payment && form.total_installments" class="bg-[#121212] border border-[#2a2a2a] rounded-xl p-5 mt-6">
                             <p class="text-[10px] font-bold text-white uppercase tracking-widest mb-4">Proyección</p>
-                            <div class="grid grid-cols-3 gap-4 text-xs">
+                            <div class="grid grid-cols-2 gap-4 text-xs mb-3">
                                 <div>
                                     <p class="text-[#71717a] mb-1">Valor Venta</p>
                                     <p class="text-white font-medium">{{ formatCurrency(lot.price) }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-[#71717a] mb-1">Monto Financiable</p>
-                                    <p class="text-white font-medium">{{ formatCurrency(lot.price - form.down_payment) }}</p>
+                                    <p class="text-[#71717a] mb-1">Enganche</p>
+                                    <p class="text-white font-medium">{{ formatCurrency(form.down_payment) }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-[#71717a] mb-1">Mensualidad Fija</p>
-                                    <p class="text-white font-bold">{{ formatCurrency(estimatedInstallment) }}</p>
+                                    <p class="text-[#71717a] mb-1">Cuota Inicial ({{ form.initial_payment_percentage }}%)</p>
+                                    <p class="text-amber-300 font-medium">{{ formatCurrency(initialPaymentAmount) }}</p>
                                 </div>
+                                <div>
+                                    <p class="text-[#71717a] mb-1">Monto Financiable</p>
+                                    <p class="text-white font-medium">{{ formatCurrency(Math.max(0, lot.price - form.down_payment - initialPaymentAmount)) }}</p>
+                                </div>
+                            </div>
+                            <div class="border-t border-[#2a2a2a] pt-3 mt-1">
+                                <p class="text-[#71717a] text-xs mb-1">Mensualidad Fija</p>
+                                <p class="text-white font-bold text-base">{{ formatCurrency(estimatedInstallment) }}</p>
                             </div>
                         </div>
 

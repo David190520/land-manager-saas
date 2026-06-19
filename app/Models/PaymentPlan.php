@@ -18,6 +18,11 @@ class PaymentPlan extends Model
         'interest_rate',
         'start_date',
         'status',
+        'initial_payment_percentage',
+        'initial_payment_amount',
+        'initial_payment_deadline',
+        'initial_payment_paid',
+        'initial_payment_date',
     ];
 
     protected $casts = [
@@ -27,6 +32,11 @@ class PaymentPlan extends Model
         'installment_amount' => 'decimal:2',
         'interest_rate' => 'decimal:2',
         'start_date' => 'date',
+        'initial_payment_percentage' => 'decimal:2',
+        'initial_payment_amount' => 'decimal:2',
+        'initial_payment_deadline' => 'date',
+        'initial_payment_paid' => 'boolean',
+        'initial_payment_date' => 'date',
     ];
 
     public function reservation(): BelongsTo
@@ -37,6 +47,11 @@ class PaymentPlan extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function scopePendingInitialPayment($query)
+    {
+        return $query->where('initial_payment_paid', false);
     }
 
     public function getTotalPaidAttribute(): float
