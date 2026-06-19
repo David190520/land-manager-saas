@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Lot;
 use App\Models\Client;
 use Illuminate\Http\Request;
@@ -97,6 +98,32 @@ class LotController extends Controller
             'reservation' => $reservation,
             'clients' => $clients,
         ]);
+    }
+
+    public function history(Lot $lot)
+    {
+        $tenantId = request()->user()->tenant_id;
+        $lot->loadMissing('block.project');
+
+        if ($lot->block->project->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        $logs = AuditLog::with('user')
+            ->where('entity_type', 'lot')
+            ->where('entity_id', $lot->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn($log) => [
+                'id'          => $log->id,
+                'action_type' => $log->action_type,
+                'description' => $log->description,
+                'new_values'  => $log->new_values,
+                'user_name'   => $log->user?->name,
+                'created_at'  => $log->created_at->format('d/m/Y H:i'),
+            ]);
+
+        return response()->json($logs);
     }
 
     public function update(Request $request, Lot $lot)

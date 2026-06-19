@@ -119,6 +119,9 @@ class ReservationController extends Controller
 
         $refundDownPayment = $request->boolean('refund_down_payment', false);
 
+        // Expose the refund flag to the ReservationObserver via a transient model attribute.
+        $reservation->refund_down_payment_flag = $refundDownPayment;
+
         $reservation->update([
             'status' => 'cancelled',
         ]);

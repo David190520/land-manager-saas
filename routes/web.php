@@ -32,6 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Lots
     Route::get('/lots/{lot}', [LotController::class, 'show'])->name('lots.show');
     Route::put('/lots/{lot}', [LotController::class, 'update'])->name('lots.update');
+    Route::get('/lots/{lot}/history', [LotController::class, 'history'])->name('lots.history');
 
     // Clients
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');

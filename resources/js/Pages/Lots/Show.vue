@@ -198,6 +198,50 @@ const getStatusTextClasses = (status) => {
         'cancelled': 'text-red-500',
     }[status] || 'text-white';
 };
+
+// ── Lot history ──────────────────────────────────────────────────────────────
+const showHistory = ref(false);
+const historyLogs = ref([]);
+const historyLoading = ref(false);
+
+const toggleHistory = async () => {
+    showHistory.value = !showHistory.value;
+    if (showHistory.value && historyLogs.value.length === 0) {
+        historyLoading.value = true;
+        try {
+            const res = await fetch(`/lots/${props.lot.id}/history`, {
+                headers: { Accept: 'application/json' },
+            });
+            historyLogs.value = await res.json();
+        } finally {
+            historyLoading.value = false;
+        }
+    }
+};
+
+const historyIcon = (actionType) => ({
+    lot_reserved:   'md-bookmarkborder',
+    lot_contracted: 'md-descriptionoutlined',
+    lot_payment:    'md-payment-outlined',
+    lot_cancelled:  'md-cancel-outlined',
+    lot_available:  'md-checkcircleoutline',
+}[actionType] || 'md-circle');
+
+const historyIconFill = (actionType) => ({
+    lot_reserved:   '#3b82f6',
+    lot_contracted: '#10b981',
+    lot_payment:    '#a855f7',
+    lot_cancelled:  '#f43f5e',
+    lot_available:  '#71717a',
+}[actionType] || '#71717a');
+
+const historyIconBg = (actionType) => ({
+    lot_reserved:   'bg-blue-500/10 border-blue-500/30',
+    lot_contracted: 'bg-emerald-500/10 border-emerald-500/30',
+    lot_payment:    'bg-purple-500/10 border-purple-500/30',
+    lot_cancelled:  'bg-rose-500/10 border-rose-500/30',
+    lot_available:  'bg-[#262626] border-[#3f3f46]',
+}[actionType] || 'bg-[#262626] border-[#3f3f46]');
 </script>
 
 <template>
@@ -655,6 +699,77 @@ const getStatusTextClasses = (status) => {
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lot History -->
+        <div class="mt-8 bg-[#18181a] border border-[#2a2a2a] rounded-2xl animate-slide-up" style="animation-delay: 200ms">
+            <button @click="toggleHistory" class="w-full flex items-center justify-between px-6 py-5 text-left">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-[#262626] border border-[#3f3f46] flex items-center justify-center">
+                        <v-icon name="md-history" scale="0.9" fill="#a1a1aa" />
+                    </div>
+                    <span class="text-[11px] font-bold text-white uppercase tracking-widest">Historial del Lote</span>
+                </div>
+                <v-icon :name="showHistory ? 'md-expandless' : 'md-expandmore'" fill="#71717a" />
+            </button>
+
+            <div v-if="showHistory" class="border-t border-[#2a2a2a] p-6">
+                <!-- Loading -->
+                <div v-if="historyLoading" class="text-center py-10">
+                    <p class="text-xs text-[#71717a]">Cargando historial...</p>
+                </div>
+
+                <!-- Empty -->
+                <div v-else-if="historyLogs.length === 0" class="text-center py-10">
+                    <v-icon name="md-history" scale="1.5" fill="#3f3f46" />
+                    <p class="text-xs text-[#71717a] mt-3">Sin eventos registrados para este lote.</p>
+                </div>
+
+                <!-- Timeline -->
+                <div v-else class="relative pl-10">
+                    <div class="absolute left-3 top-2 bottom-2 w-px bg-[#2a2a2a]"></div>
+                    <div class="space-y-7">
+                        <div v-for="log in historyLogs" :key="log.id" class="relative">
+                            <!-- Dot icon -->
+                            <div :class="['absolute -left-10 top-0 w-7 h-7 rounded-full border flex items-center justify-center', historyIconBg(log.action_type)]">
+                                <v-icon :name="historyIcon(log.action_type)" scale="0.75" :fill="historyIconFill(log.action_type)" />
+                            </div>
+
+                            <!-- Content -->
+                            <p class="text-xs font-semibold text-white leading-snug">{{ log.description }}</p>
+                            <p class="text-[10px] text-[#71717a] mt-0.5">
+                                {{ log.created_at }}<span v-if="log.user_name"> — {{ log.user_name }}</span>
+                            </p>
+
+                            <!-- Extra detail: lot_reserved -->
+                            <div v-if="log.action_type === 'lot_reserved' && log.new_values" class="mt-2 bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[10px] space-y-1">
+                                <p class="text-[#71717a]">Cliente: <span class="text-white">{{ log.new_values.client_name }}</span></p>
+                                <p class="text-[#71717a]">Apartado: <span class="text-white">{{ formatCurrency(log.new_values.down_payment) }}</span></p>
+                                <p class="text-[#71717a]">Límite: <span class="text-white">{{ log.new_values.payment_deadline }}</span></p>
+                            </div>
+
+                            <!-- Extra detail: lot_payment -->
+                            <div v-if="log.action_type === 'lot_payment' && log.new_values" class="mt-1">
+                                <span class="text-[10px] font-semibold text-purple-400">{{ formatCurrency(log.new_values.amount) }}</span>
+                                <span v-if="log.new_values.paid_date" class="text-[10px] text-[#71717a] ml-2">{{ log.new_values.paid_date }}</span>
+                            </div>
+
+                            <!-- Extra detail: lot_cancelled -->
+                            <div v-if="log.action_type === 'lot_cancelled' && log.new_values" class="mt-2 bg-[#121212] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[10px] space-y-1">
+                                <p class="text-[#71717a]">Cliente: <span class="text-white">{{ log.new_values.client_name }}</span></p>
+                                <p class="text-[#71717a]">Cuotas pagadas: <span class="text-white">{{ log.new_values.installments_paid }}</span></p>
+                                <p class="text-[#71717a]">Total abonado: <span class="text-white">{{ formatCurrency(log.new_values.total_paid) }}</span></p>
+                                <p class="text-[#71717a]">
+                                    Devolución apartado:
+                                    <span :class="log.new_values.refund_down_payment ? 'text-emerald-400' : 'text-rose-400'">
+                                        {{ log.new_values.refund_down_payment ? 'Sí' : 'No' }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
