@@ -23,15 +23,14 @@ class FinanceController extends Controller
             });
 
         // Search filter
-        if ($request->search) {
-            $query->where(function ($q) use ($request) {
-                $searchTerm = '%' . $request->search . '%';
-                $q->whereHas('reservation.client', function ($q) use ($searchTerm) {
-                    $q->where(\Illuminate\Support\Facades\DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', $searchTerm)
-                        ->orWhere('document_number', 'like', $searchTerm)
-                        ->orWhere('phone', 'like', $searchTerm);
-                })->orWhereHas('reservation.lot', function ($q) use ($searchTerm) {
-                    $q->where('lot_number', 'like', $searchTerm);
+        if ($search = $request->search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('reservation.client', function ($q) use ($search) {
+                    $q->whereRaw("unaccent(LOWER(first_name || ' ' || last_name)) LIKE unaccent(LOWER(?))", ["%{$search}%"])
+                        ->orWhereRaw("unaccent(LOWER(document_number)) LIKE unaccent(LOWER(?))", ["%{$search}%"])
+                        ->orWhereRaw("unaccent(LOWER(phone)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                })->orWhereHas('reservation.lot', function ($q) use ($search) {
+                    $q->whereRaw("unaccent(LOWER(lot_number)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
                 });
             });
         }

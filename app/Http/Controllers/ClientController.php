@@ -24,10 +24,9 @@ class ClientController extends Controller
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'ilike', "%{$search}%")
-                    ->orWhere('last_name', 'ilike', "%{$search}%")
-                    ->orWhere('document_number', 'ilike', "%{$search}%")
-                    ->orWhere('phone', 'ilike', "%{$search}%");
+                $q->whereRaw("unaccent(LOWER(first_name || ' ' || last_name)) LIKE unaccent(LOWER(?))", ["%{$search}%"])
+                    ->orWhereRaw("unaccent(LOWER(document_number)) LIKE unaccent(LOWER(?))", ["%{$search}%"])
+                    ->orWhereRaw("unaccent(LOWER(phone)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
             });
         }
 

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "laravel-specialist": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-specialist/SKILL.md",
+      "computedHash": "805be17bd59f759e2f2f2dcbd6bd205ca6678420a87b21da1c16e0793093615c"
+    },
+    "postgresql-optimization": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/postgresql-optimization/SKILL.md",
+      "computedHash": "8022448de70ba9a485e3b5bce34c5bbc644f93eb39b68431c9f7dabcf03aeb09"
+    },
+    "vue-best-practices": {
+      "source": "hyf0/vue-skills",
+      "sourceType": "github",
+      "skillPath": "skills/vue-best-practices/SKILL.md",
+      "computedHash": "21132f6c11c765bd11d0d6ad081122dd858630073e2123b651e58f17b399b131"
+    }
+  }
+}
