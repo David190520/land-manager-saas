@@ -57,6 +57,7 @@ class FinanceController extends Controller
                 return [
                     'id' => $plan->id,
                     'client_name' => $plan->reservation->client->full_name,
+                    'client_phone' => $plan->reservation->client->phone,
                     'lot' => $plan->reservation->lot->full_identifier,
                     'project' => $plan->reservation->lot->block->project->name,
                     'total_price' => (float) $plan->total_price,
@@ -143,6 +144,7 @@ class FinanceController extends Controller
                 'full_name' => $paymentPlan->reservation->client->full_name,
                 'document_number' => $paymentPlan->reservation->client->document_number,
                 'phone' => $paymentPlan->reservation->client->phone,
+                'phone_secondary' => $paymentPlan->reservation->client->phone_secondary,
             ],
             'lot' => [
                 'id' => $paymentPlan->reservation->lot->id,

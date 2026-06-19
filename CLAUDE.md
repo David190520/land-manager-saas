@@ -38,7 +38,7 @@ Lote disponible → Reserva (apartado $500k) → Pago cuota inicial (30% del pre
 
 ## Tareas pendientes (implementar en este orden)
 1. ~~Search sin case sensitive ni tildes (ClientController + libro mayor)~~ ✓ DONE
-2. Columna celular en libro mayor y detalle de contrato
+2. ~~Columna celular en libro mayor y detalle de contrato~~ ✓ DONE
 3. Nuevo flujo de venta: separar apartado de cuota inicial (30%) en payment_plans
 4. Descuento en precio del lote (campos en payment_plans: discount_type, discount_value, original_price)
 5. Corrección PDF: mostrar cuota inicial correcta, no solo el apartado

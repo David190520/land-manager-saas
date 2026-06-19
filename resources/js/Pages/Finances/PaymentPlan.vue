@@ -127,6 +127,8 @@ const getStatusClasses = (row, isInitial = false) => {
                         <div>
                             <p class="text-sm font-semibold text-white tracking-wide">{{ client.full_name }}</p>
                             <p class="text-[10px] text-[#71717a] uppercase tracking-wider mt-1 font-medium">NIT/CC: {{ client.document_number }}</p>
+                            <p class="text-[10px] text-[#71717a] uppercase tracking-wider mt-0.5 font-medium">Cel: {{ client.phone }}</p>
+                            <p v-if="client.phone_secondary" class="text-[10px] text-[#71717a] uppercase tracking-wider mt-0.5 font-medium">Teléfono 2: {{ client.phone_secondary }}</p>
                         </div>
                     </div>
                 </div>

@@ -116,6 +116,7 @@ const formatCurrency = (value) => {
                     <tr>
                         <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Fecha Contrato</th>
                         <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Titular del Contrato</th>
+                        <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Celular</th>
                         <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Activo Fijo</th>
                         <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Desarrollo</th>
                         <th class="font-bold text-[9px] tracking-widest text-[#71717a]">Venta Total</th>
@@ -128,7 +129,7 @@ const formatCurrency = (value) => {
                 </thead>
                 <tbody class="text-xs">
                     <tr v-if="plans.data.length === 0">
-                        <td colspan="10" class="text-center py-16 text-[#71717a] bg-[#121212] border-t border-[#2a2a2a]">
+                        <td colspan="11" class="text-center py-16 text-[#71717a] bg-[#121212] border-t border-[#2a2a2a]">
                             <v-icon name="md-cancel-outlined" scale="2" fill="#3f3f46" class="mx-auto block mb-3" />
                             No existen planes de pago estructurados en el momento.
                         </td>
@@ -144,6 +145,7 @@ const formatCurrency = (value) => {
                     >
                         <td class="text-[#71717a] font-medium py-4">{{ plan.created_at }}</td>
                         <td class="font-semibold text-white tracking-wide">{{ plan.client_name }}</td>
+                        <td class="text-[#a1a1aa] font-medium">{{ plan.client_phone || '—' }}</td>
                         <td class="text-[#a1a1aa] font-medium">L-{{ plan.lot }}</td>
                         <td class="text-[#71717a] tracking-wide">{{ plan.project }}</td>
                         <td class="text-white font-semibold">{{ formatCurrency(plan.total_price) }}</td>
