@@ -79,16 +79,29 @@
         <div class="section-title">Resumen Financiero del Contrato</div>
         <table class="info-grid">
             <tr>
-                <td class="label">Valor Total del Contrato:</td>
+                <td class="label">Monto Nominal:</td>
+                <td class="value">${{ number_format($plan->original_price ?? $plan->total_price, 0, ',', '.') }} COP</td>
+                <td class="label">Capital Directo Prestado:</td>
                 <td class="value">${{ number_format($plan->total_price, 0, ',', '.') }} COP</td>
-                <td class="label">Total Pagado:</td>
-                <td class="value">${{ number_format($plan->total_paid, 0, ',', '.') }} COP</td>
+            </tr>
+            @if(($plan->original_price ?? $plan->total_price) != $plan->total_price)
+            <tr>
+                <td class="label" style="color: #28a745;">Descuento aplicado:</td>
+                <td class="value" style="color: #28a745;">-${{ number_format($plan->original_price - $plan->total_price, 0, ',', '.') }} COP</td>
+                <td></td><td></td>
+            </tr>
+            @endif
+            <tr>
+                <td class="label">Valor de Apartado:</td>
+                <td class="value">${{ number_format($plan->reservation->down_payment ?? $plan->down_payment, 0, ',', '.') }} COP</td>
+                <td class="label">Cuota Inicial ({{ number_format((float)($plan->initial_payment_percentage ?? 30), 0) }}%):</td>
+                <td class="value">${{ number_format((float)($plan->initial_payment_amount ?? 0), 0, ',', '.') }} COP</td>
             </tr>
             <tr>
                 <td class="label">Total de Cuotas:</td>
                 <td class="value">{{ $plan->total_installments }}</td>
-                <td class="label">Cuota Inicial:</td>
-                <td class="value">${{ number_format($plan->down_payment, 0, ',', '.') }} COP</td>
+                <td class="label">Total Pagado:</td>
+                <td class="value">${{ number_format($plan->total_paid, 0, ',', '.') }} COP</td>
             </tr>
         </table>
     </div>
