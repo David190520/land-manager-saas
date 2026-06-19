@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'tenant_id',
         'role',
+        'is_active',
     ];
 
     /**
@@ -46,6 +47,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -56,16 +58,26 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['admin', 'accountant']);
+        return $this->role === 'admin';
     }
 
-    public function isSalesAgent(): bool
+    public function isAccountant(): bool
     {
-        return $this->role === 'sales_agent';
+        return $this->role === 'accountant';
+    }
+
+    public function isSecretary(): bool
+    {
+        return $this->role === 'secretary';
+    }
+
+    public function hasFinanceAccess(): bool
+    {
+        return in_array($this->role, ['admin', 'accountant']);
     }
 
     public function hasFullAccess(): bool
     {
-        return $this->isAdmin();
+        return $this->role === 'admin';
     }
 }

@@ -18,7 +18,7 @@ class ClientController extends Controller
 
         $query = Client::where('tenant_id', $tenantId);
 
-        if ($request->user()->role === 'sales_agent') {
+        if ($request->user()->role === 'secretary') {
             $query->where('user_id', $request->user()->id);
         }
 

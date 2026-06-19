@@ -13,37 +13,37 @@ const navigation = [
         name: 'Dashboard',
         href: 'dashboard',
         icon: 'md-spacedashboard-outlined',
+        roles: ['admin', 'accountant', 'secretary'],
     },
     {
         name: 'Proyectos',
         href: 'projects.index',
         icon: 'md-workoutline',
+        roles: ['admin', 'accountant', 'secretary'],
     },
     {
         name: 'Clientes',
         href: 'clients.index',
         icon: 'md-peopleoutline',
+        roles: ['admin', 'accountant', 'secretary'],
     },
     {
         name: 'Finanzas',
         href: 'finances.index',
         icon: 'md-attachmoney-outlined',
-        adminOnly: true,
+        roles: ['admin', 'accountant'],
     },
     {
         name: 'Configuración',
         href: 'settings.index',
         icon: 'md-settings-outlined',
-        adminOnly: true,
+        roles: ['admin'],
     },
 ];
 
-const filteredNav = computed(() => {
-    return navigation.filter(item => {
-        if (item.adminOnly && user.value.role === 'sales_agent') return false;
-        return true;
-    });
-});
+const filteredNav = computed(() =>
+    navigation.filter(item => item.roles.includes(user.value.role))
+);
 
 const isActive = (routeName) => {
     return route().current(routeName) || route().current(routeName + '.*');
@@ -51,9 +51,9 @@ const isActive = (routeName) => {
 
 const roleLabel = computed(() => {
     const labels = {
-        admin: 'Administrador',
+        admin:      'Administrador',
         accountant: 'Contador',
-        sales_agent: 'Agente de Ventas',
+        secretary:  'Secretaria',
     };
     return labels[user.value.role] || user.value.role;
 });
